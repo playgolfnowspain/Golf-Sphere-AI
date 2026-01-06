@@ -1,38 +1,58 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { articles, podcasts, bookings, type Article, type InsertArticle, type Podcast, type InsertPodcast, type Booking, type InsertBooking } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Articles
+  getArticles(): Promise<Article[]>;
+  getArticleBySlug(slug: string): Promise<Article | undefined>;
+  createArticle(article: InsertArticle): Promise<Article>;
+
+  // Podcasts
+  getPodcasts(): Promise<Podcast[]>;
+  getPodcastBySlug(slug: string): Promise<Podcast | undefined>;
+  createPodcast(podcast: InsertPodcast): Promise<Podcast>;
+
+  // Bookings
+  createBooking(booking: InsertBooking): Promise<Booking>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  // Articles
+  async getArticles(): Promise<Article[]> {
+    return await db.select().from(articles).orderBy(desc(articles.createdAt));
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async getArticleBySlug(slug: string): Promise<Article | undefined> {
+    const [article] = await db.select().from(articles).where(eq(articles.slug, slug));
+    return article;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async createArticle(insertArticle: InsertArticle): Promise<Article> {
+    const [article] = await db.insert(articles).values(insertArticle).returning();
+    return article;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  // Podcasts
+  async getPodcasts(): Promise<Podcast[]> {
+    return await db.select().from(podcasts).orderBy(desc(podcasts.createdAt));
+  }
+
+  async getPodcastBySlug(slug: string): Promise<Podcast | undefined> {
+    const [podcast] = await db.select().from(podcasts).where(eq(podcasts.slug, slug));
+    return podcast;
+  }
+
+  async createPodcast(insertPodcast: InsertPodcast): Promise<Podcast> {
+    const [podcast] = await db.insert(podcasts).values(insertPodcast).returning();
+    return podcast;
+  }
+
+  // Bookings
+  async createBooking(insertBooking: InsertBooking): Promise<Booking> {
+    const [booking] = await db.insert(bookings).values(insertBooking).returning();
+    return booking;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
