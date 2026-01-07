@@ -61,52 +61,67 @@ class MockChatStorage implements IChatStorage {
 }
 
 // Try to use database storage, fall back to mock if database is not available
-let chatStorage: IChatStorage;
+let chatStorage: IChatStorage = new MockChatStorage();
 
-if (process.env.DATABASE_URL) {
-  try {
-    const { db } = await import("../../db");
-    const { conversations, messages } = await import("@shared/schema");
-    const { eq, desc } = await import("drizzle-orm");
+async function initializeChatStorage(): Promise<IChatStorage> {
+  if (process.env.DATABASE_URL) {
+    try {
+      const { db } = await import("../../db");
+      const { conversations, messages } = await import("@shared/schema");
+      const { eq, desc } = await import("drizzle-orm");
 
-    chatStorage = {
-      async getConversation(id: number) {
-        const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
-        return conversation;
-      },
+      if (!db) {
+        throw new Error("Database not initialized");
+      }
 
-      async getAllConversations() {
-        return db.select().from(conversations).orderBy(desc(conversations.createdAt));
-      },
+      const storage: IChatStorage = {
+        async getConversation(id: number) {
+          const [conversation] = await db.select().from(conversations).where(eq(conversations.id, id));
+          return conversation;
+        },
 
-      async createConversation(title: string) {
-        const [conversation] = await db.insert(conversations).values({ title }).returning();
-        return conversation;
-      },
+        async getAllConversations() {
+          return db.select().from(conversations).orderBy(desc(conversations.createdAt));
+        },
 
-      async deleteConversation(id: number) {
-        await db.delete(messages).where(eq(messages.conversationId, id));
-        await db.delete(conversations).where(eq(conversations.id, id));
-      },
+        async createConversation(title: string) {
+          const [conversation] = await db.insert(conversations).values({ title }).returning();
+          return conversation;
+        },
 
-      async getMessagesByConversation(conversationId: number) {
-        return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
-      },
+        async deleteConversation(id: number) {
+          await db.delete(messages).where(eq(messages.conversationId, id));
+          await db.delete(conversations).where(eq(conversations.id, id));
+        },
 
-      async createMessage(conversationId: number, role: string, content: string) {
-        const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
-        return message;
-      },
-    };
-    console.log("[chat-storage] Using database storage");
-  } catch (error) {
-    console.log("[chat-storage] Database connection failed, using mock storage:", error instanceof Error ? error.message : error);
-    chatStorage = new MockChatStorage();
+        async getMessagesByConversation(conversationId: number) {
+          return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.createdAt);
+        },
+
+        async createMessage(conversationId: number, role: string, content: string) {
+          const [message] = await db.insert(messages).values({ conversationId, role, content }).returning();
+          return message;
+        },
+      };
+      console.log("[chat-storage] Using database storage");
+      return storage;
+    } catch (error) {
+      console.log("[chat-storage] Database connection failed, using mock storage:", error instanceof Error ? error.message : error);
+      return new MockChatStorage();
+    }
+  } else {
+    console.log("[chat-storage] No DATABASE_URL set, using mock storage for development");
+    return new MockChatStorage();
   }
-} else {
-  console.log("[chat-storage] No DATABASE_URL set, using mock storage for development");
-  chatStorage = new MockChatStorage();
 }
+
+// Initialize chat storage asynchronously
+initializeChatStorage().then((storage) => {
+  chatStorage = storage;
+}).catch((err) => {
+  console.error("[chat-storage] Failed to initialize:", err);
+  chatStorage = new MockChatStorage();
+});
 
 export { chatStorage };
 
