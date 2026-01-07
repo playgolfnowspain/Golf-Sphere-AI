@@ -4,7 +4,6 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerChatRoutes } from "./replit_integrations/chat";
-import { registerImageRoutes } from "./replit_integrations/image";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -13,7 +12,6 @@ export async function registerRoutes(
   
   // Register AI Integration Routes
   registerChatRoutes(app);
-  registerImageRoutes(app);
 
   // Articles Routes
   app.get(api.articles.list.path, async (req, res) => {
@@ -86,6 +84,29 @@ export async function registerRoutes(
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Newsletter Routes
+  app.post(api.newsletter.subscribe.path, async (req, res) => {
+    try {
+      const input = api.newsletter.subscribe.input.parse(req.body);
+      const subscriber = await storage.subscribeToNewsletter(input.email);
+      res.status(201).json(subscriber);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      if (err instanceof Error && err.message === "Email already subscribed") {
+        return res.status(409).json({
+          message: "This email is already subscribed to our newsletter",
+          error: "already_subscribed" as const,
         });
       }
       throw err;

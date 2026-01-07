@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { useArticles, usePodcasts } from "@/hooks/use-content";
 import { Calendar, Play, ArrowRight, Star } from "lucide-react";
 import { motion } from "framer-motion";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 export default function Home() {
   const { data: articles, isLoading: articlesLoading } = useArticles();
@@ -123,7 +124,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div className="order-2 lg:order-1 space-y-6">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Star className="w-4 h-4 fill-primary" /> Powered by Greenfee365
+                <Star className="w-4 h-4 fill-primary" /> Powered by GolfNow
               </span>
               <h2 className="text-4xl md:text-5xl font-display leading-tight">
                 Seamless Tee Time <br/>Bookings across Spain
@@ -203,6 +204,11 @@ export default function Home() {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="container-wide">
+        <NewsletterSignup variant="default" />
       </section>
     </div>
   );

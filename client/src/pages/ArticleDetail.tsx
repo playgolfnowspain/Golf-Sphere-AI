@@ -50,7 +50,7 @@ export default function ArticleDetail() {
               </div>
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4" />
-                <span>By GolfSpain.ai Agent</span>
+                <span>By PlayGolfSpainNow</span>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertArticleSchema, insertPodcastSchema, insertBookingSchema, articles, podcasts, bookings } from './schema';
+import { insertArticleSchema, insertPodcastSchema, insertBookingSchema, insertNewsletterSubscriberSchema, articles, podcasts, bookings, newsletterSubscribers } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -75,6 +75,18 @@ export const api = {
       responses: {
         201: z.custom<typeof bookings.$inferSelect>(),
         400: errorSchemas.validation,
+      },
+    },
+  },
+  newsletter: {
+    subscribe: {
+      method: 'POST' as const,
+      path: '/api/newsletter/subscribe',
+      input: insertNewsletterSubscriberSchema,
+      responses: {
+        201: z.custom<typeof newsletterSubscribers.$inferSelect>(),
+        400: errorSchemas.validation,
+        409: z.object({ message: z.string(), error: z.literal('already_subscribed') }),
       },
     },
   },

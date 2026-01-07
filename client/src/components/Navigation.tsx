@@ -24,7 +24,7 @@ export function Navigation() {
             <Globe className="w-6 h-6 text-white" />
           </div>
           <span className="text-xl font-bold font-display tracking-tight text-foreground">
-            Golf<span className="text-primary">Spain</span>.ai
+            PlayGolfSpainNow
           </span>
         </Link>
 

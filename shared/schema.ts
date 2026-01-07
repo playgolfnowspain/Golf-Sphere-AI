@@ -34,9 +34,17 @@ export const bookings = pgTable("bookings", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: serial("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  subscribed: boolean("subscribed").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertArticleSchema = createInsertSchema(articles).omit({ id: true, createdAt: true });
 export const insertPodcastSchema = createInsertSchema(podcasts).omit({ id: true, createdAt: true });
 export const insertBookingSchema = createInsertSchema(bookings).omit({ id: true, createdAt: true, status: true });
+export const insertNewsletterSubscriberSchema = createInsertSchema(newsletterSubscribers).omit({ id: true, createdAt: true, subscribed: true });
 
 export type Article = typeof articles.$inferSelect;
 export type InsertArticle = z.infer<typeof insertArticleSchema>;
@@ -44,3 +52,5 @@ export type Podcast = typeof podcasts.$inferSelect;
 export type InsertPodcast = z.infer<typeof insertPodcastSchema>;
 export type Booking = typeof bookings.$inferSelect;
 export type InsertBooking = z.infer<typeof insertBookingSchema>;
+export type NewsletterSubscriber = typeof newsletterSubscribers.$inferSelect;
+export type InsertNewsletterSubscriber = z.infer<typeof insertNewsletterSubscriberSchema>;

@@ -55,7 +55,7 @@ export default function Book() {
           <div>
             <h1 className="text-4xl md:text-5xl font-display font-bold mb-4">Book Your Tee Time</h1>
             <p className="text-lg text-muted-foreground">
-              Secure your spot at Spain's top golf courses. Real-time availability powered by Greenfee365.
+              Secure your spot at Spain's top golf courses. Real-time availability powered by GolfNow.
             </p>
           </div>
 
@@ -207,7 +207,7 @@ export default function Book() {
             </button>
             
             <p className="text-xs text-center text-muted-foreground">
-              By confirming, you agree to our Terms of Service. Powered by Greenfee365.
+              By confirming, you agree to our Terms of Service. Powered by GolfNow.
             </p>
           </form>
         </div>

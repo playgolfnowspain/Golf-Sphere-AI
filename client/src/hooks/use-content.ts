@@ -77,3 +77,28 @@ export function useCreateBooking() {
     // No query invalidation needed as we don't list bookings publicly
   });
 }
+
+// Newsletter Hooks
+export function useSubscribeNewsletter() {
+  return useMutation({
+    mutationFn: async (email: string) => {
+      const res = await fetch(api.newsletter.subscribe.path, {
+        method: api.newsletter.subscribe.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        if (res.status === 400) {
+          const error = await res.json();
+          throw new Error(error.message || "Validation failed");
+        }
+        if (res.status === 409) {
+          const error = await res.json();
+          throw new Error(error.message || "Email already subscribed");
+        }
+        throw new Error("Failed to subscribe");
+      }
+      return api.newsletter.subscribe.responses[201].parse(await res.json());
+    },
+  });
+}

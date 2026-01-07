@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useChat } from "@/hooks/use-chat";
-import { MessageCircle, X, Send, Bot, User } from "lucide-react";
+import { MessageCircle, X, Send, Bot, User, CheckCircle2, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -42,8 +42,11 @@ export function ChatWidget() {
                   <Bot className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm">Golf AI Assistant</h3>
-                  <p className="text-xs text-primary-foreground/80">Always here to help</p>
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Sparkles className="w-3 h-3" />
+                    Golf AI Assistant
+                  </h3>
+                  <p className="text-xs text-primary-foreground/80">Book via GolfNow</p>
                 </div>
               </div>
               <button onClick={() => setIsOpen(false)} className="hover:bg-white/20 p-2 rounded-lg transition-colors">
@@ -54,8 +57,19 @@ export function ChatWidget() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-secondary/20">
               {messages.length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
-                  <p className="text-sm">Hi! Ask me anything about golf courses in Spain or booking tee times.</p>
+                <div className="text-center text-muted-foreground py-8 space-y-3">
+                  <div className="flex justify-center">
+                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                      <Bot className="w-6 h-6 text-primary" />
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium">Hi! I'm your golf booking assistant.</p>
+                  <p className="text-xs">I can help you find courses, check availability, and book tee times instantly!</p>
+                  <div className="pt-2 space-y-1 text-xs">
+                    <p className="font-semibold">Try asking:</p>
+                    <p>"Show me courses in Costa del Sol"</p>
+                    <p>"I want to book Valderrama for next Saturday"</p>
+                  </div>
                 </div>
               )}
               
@@ -77,9 +91,28 @@ export function ChatWidget() {
                     "p-3 rounded-2xl text-sm leading-relaxed",
                     msg.role === "user" 
                       ? "bg-gray-100 text-gray-900 rounded-tr-sm" 
-                      : "bg-white border border-border shadow-sm text-gray-800 rounded-tl-sm"
+                      : msg.content.includes("✅") || msg.content.includes("Booking Confirmed")
+                        ? "bg-green-50 border-2 border-green-200 shadow-sm text-gray-800 rounded-tl-sm"
+                        : "bg-white border border-border shadow-sm text-gray-800 rounded-tl-sm"
                   )}>
-                    {msg.content}
+                    {msg.content.split("\n").map((line, idx) => {
+                      // Highlight booking confirmations
+                      if (line.includes("✅") || line.includes("**Confirmation Number:**")) {
+                        return (
+                          <div key={idx} className="space-y-1">
+                            {line.includes("**") ? (
+                              <div className="font-semibold text-green-700 flex items-center gap-2 my-2">
+                                <CheckCircle2 className="w-4 h-4" />
+                                {line.replace(/\*\*/g, "")}
+                              </div>
+                            ) : (
+                              <p className={line.includes("✅") ? "font-bold text-green-700 mb-2" : ""}>{line}</p>
+                            )}
+                          </div>
+                        );
+                      }
+                      return <p key={idx}>{line || "\u00A0"}</p>;
+                    })}
                     {msg.isStreaming && (
                       <span className="inline-block w-2 h-4 bg-primary/50 ml-1 animate-pulse" />
                     )}
