@@ -166,9 +166,10 @@ class MockStorage implements IStorage {
 }
 
 // Try to use database storage, fall back to mock if database is not available
-let storage: IStorage;
+// Initialize immediately with MockStorage to avoid undefined access
+let storage: IStorage = new MockStorage();
 
-async function initializeStorage() {
+async function initializeStorage(): Promise<IStorage> {
   if (process.env.DATABASE_URL) {
     try {
       // Import database dependencies
@@ -176,103 +177,103 @@ async function initializeStorage() {
       const { articles, podcasts, bookings, newsletterSubscribers } = await import("@shared/schema");
       const { eq, desc } = await import("drizzle-orm");
 
-    class DatabaseStorage implements IStorage {
-      async getArticles(): Promise<Article[]> {
-        return await db.select().from(articles).orderBy(desc(articles.createdAt));
+      if (!db) {
+        throw new Error("Database not initialized despite DATABASE_URL being set.");
       }
 
-      async getArticleBySlug(slug: string): Promise<Article | undefined> {
-        const [article] = await db.select().from(articles).where(eq(articles.slug, slug));
-        return article;
-      }
+      // Store db reference for type narrowing
+      const database = db;
 
-      async createArticle(insertArticle: InsertArticle): Promise<Article> {
-        const [article] = await db.insert(articles).values(insertArticle).returning();
-        return article;
-      }
-
-      async getPodcasts(): Promise<Podcast[]> {
-        return await db.select().from(podcasts).orderBy(desc(podcasts.createdAt));
-      }
-
-      async getPodcastBySlug(slug: string): Promise<Podcast | undefined> {
-        const [podcast] = await db.select().from(podcasts).where(eq(podcasts.slug, slug));
-        return podcast;
-      }
-
-      async createPodcast(insertPodcast: InsertPodcast): Promise<Podcast> {
-        const [podcast] = await db.insert(podcasts).values(insertPodcast).returning();
-        return podcast;
-      }
-
-      async createBooking(insertBooking: InsertBooking): Promise<Booking> {
-        const [booking] = await db.insert(bookings).values(insertBooking).returning();
-        return booking;
-      }
-
-      async subscribeToNewsletter(email: string): Promise<NewsletterSubscriber> {
-        // Check if already subscribed
-        const existing = await this.getSubscriberByEmail(email);
-        if (existing && existing.subscribed) {
-          throw new Error("Email already subscribed");
+      class DatabaseStorage implements IStorage {
+        async getArticles(): Promise<Article[]> {
+          return await database.select().from(articles).orderBy(desc(articles.createdAt));
         }
 
-        if (existing) {
-          // Reactivate subscription
-          const [updated] = await db
-            .update(newsletterSubscribers)
-            .set({ subscribed: true })
-            .where(eq(newsletterSubscribers.email, email.toLowerCase()))
+        async getArticleBySlug(slug: string): Promise<Article | undefined> {
+          const [article] = await database.select().from(articles).where(eq(articles.slug, slug));
+          return article;
+        }
+
+        async createArticle(insertArticle: InsertArticle): Promise<Article> {
+          const [article] = await database.insert(articles).values(insertArticle).returning();
+          return article;
+        }
+
+        async getPodcasts(): Promise<Podcast[]> {
+          return await database.select().from(podcasts).orderBy(desc(podcasts.createdAt));
+        }
+
+        async getPodcastBySlug(slug: string): Promise<Podcast | undefined> {
+          const [podcast] = await database.select().from(podcasts).where(eq(podcasts.slug, slug));
+          return podcast;
+        }
+
+        async createPodcast(insertPodcast: InsertPodcast): Promise<Podcast> {
+          const [podcast] = await database.insert(podcasts).values(insertPodcast).returning();
+          return podcast;
+        }
+
+        async createBooking(insertBooking: InsertBooking): Promise<Booking> {
+          const [booking] = await database.insert(bookings).values(insertBooking).returning();
+          return booking;
+        }
+
+        async subscribeToNewsletter(email: string): Promise<NewsletterSubscriber> {
+          // Check if already subscribed
+          const existing = await this.getSubscriberByEmail(email);
+          if (existing && existing.subscribed) {
+            throw new Error("Email already subscribed");
+          }
+
+          if (existing) {
+            // Reactivate subscription
+            const [updated] = await database
+              .update(newsletterSubscribers)
+              .set({ subscribed: true })
+              .where(eq(newsletterSubscribers.email, email.toLowerCase()))
+              .returning();
+            return updated;
+          }
+
+          const [subscriber] = await database
+            .insert(newsletterSubscribers)
+            .values({ email: email.toLowerCase(), subscribed: true })
             .returning();
-          return updated;
+          return subscriber;
         }
 
-        const [subscriber] = await db
-          .insert(newsletterSubscribers)
-          .values({ email: email.toLowerCase(), subscribed: true })
-          .returning();
-        return subscriber;
+        async getSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined> {
+          const [subscriber] = await database
+            .select()
+            .from(newsletterSubscribers)
+            .where(eq(newsletterSubscribers.email, email.toLowerCase()));
+          return subscriber;
+        }
       }
 
-      async getSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined> {
-        const [subscriber] = await db
-          .select()
-          .from(newsletterSubscribers)
-          .where(eq(newsletterSubscribers.email, email.toLowerCase()));
-        return subscriber;
-      }
-    }
-
-      storage = new DatabaseStorage();
       console.log("[storage] Using database storage");
+      return new DatabaseStorage();
     } catch (error) {
       // Database connection failed, use mock storage
       console.log("[storage] Database connection failed, using mock storage:", error instanceof Error ? error.message : error);
-      storage = new MockStorage();
+      return new MockStorage();
     }
   } else {
     // No DATABASE_URL, use mock storage
     console.log("[storage] No DATABASE_URL set, using mock storage for development");
-    storage = new MockStorage();
+    return new MockStorage();
   }
-  return storage;
 }
 
-// Initialize storage - use promise to avoid top-level await issues in TypeScript
-const storagePromise = initializeStorage();
-storagePromise.then((s) => {
-  storage = s;
-}).catch((err) => {
-  console.error("Failed to initialize storage:", err);
-  storage = new MockStorage();
-});
-
-// For immediate use, initialize with mock (will be replaced if DB is available)
-storage = new MockStorage();
-
-// Override when promise resolves
-storagePromise.then((s) => {
-  storage = s;
-});
+// Initialize storage asynchronously and update when ready
+// Storage is already initialized with MockStorage above, so it's safe to use immediately
+initializeStorage()
+  .then((initializedStorage) => {
+    storage = initializedStorage;
+  })
+  .catch((err) => {
+    console.error("[storage] Failed to initialize storage:", err);
+    // Keep MockStorage as fallback
+  });
 
 export { storage };

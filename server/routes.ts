@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { registerChatRoutes } from "./replit_integrations/chat";
+import { registerChatRoutes } from "./chat";
 
 export async function registerRoutes(
   httpServer: Server,

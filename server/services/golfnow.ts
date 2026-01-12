@@ -69,29 +69,39 @@ export interface BookingResponse {
 }
 
 export class GolfNowService {
-  private apiKey: string | null;
+  private userName: string | null;
+  private password: string | null;
+  private channelId: string | null;
   private affiliateId: string | null;
   private baseUrl: string;
   private isProduction: boolean;
 
   constructor() {
-    this.apiKey = process.env.GOLFNOW_API_KEY || null;
+    // GolfNow API uses UserName/Password authentication (not API keys)
+    this.userName = process.env.GOLFNOW_USERNAME || null;
+    this.password = process.env.GOLFNOW_PASSWORD || null;
+    this.channelId = process.env.GOLFNOW_CHANNEL_ID || null;
     this.affiliateId = process.env.GOLFNOW_AFFILIATE_ID || null;
-    this.baseUrl = process.env.GOLFNOW_BASE_URL || "https://api.golfnow.com/v1";
-    this.isProduction = !!this.apiKey;
+    // Base URL: sandbox.api.gnsvc.com/rest for sandbox, api.gnsvc.com/rest for production
+    this.baseUrl = process.env.GOLFNOW_BASE_URL || "https://sandbox.api.gnsvc.com/rest";
+    this.isProduction = !!(this.userName && this.password && this.channelId);
   }
 
   /**
    * Get API headers with authentication
+   * GolfNow API uses UserName and Password headers for simple authentication
    */
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=utf-8",
       "Accept": "application/json",
+      "Accept-Encoding": "gzip, deflate",
+      "AdvancedErrorCodes": "True",
     };
 
-    if (this.apiKey) {
-      headers["X-API-Key"] = this.apiKey;
+    if (this.userName && this.password) {
+      headers["UserName"] = this.userName;
+      headers["Password"] = this.password;
     }
 
     return headers;
@@ -112,21 +122,25 @@ export class GolfNowService {
    * Search for available golf courses
    */
   async searchCourses(params: CourseSearchParams): Promise<Course[]> {
-    if (this.isProduction && this.apiKey) {
+    if (this.isProduction) {
       try {
         // Build query parameters for GolfNow API
         const queryParams = new URLSearchParams();
         
-        if (params.location) {
+        // GolfNow uses q=geo-location for location-based searches
+        if (params.latitude && params.longitude) {
+          queryParams.append("q", "geo-location");
+          queryParams.append("latitude", params.latitude.toString());
+          queryParams.append("longitude", params.longitude.toString());
+          // proximity is in miles (default 25 if not specified)
+          queryParams.append("proximity", (params.radius || 25).toString());
+        } else if (params.location) {
           queryParams.append("q", params.location);
         }
-        if (params.latitude && params.longitude) {
-          queryParams.append("lat", params.latitude.toString());
-          queryParams.append("lon", params.longitude.toString());
-        }
-        if (params.radius) {
-          queryParams.append("radius", params.radius.toString());
-        }
+        
+        // Expand to get facility details and rates
+        queryParams.append("expand", "FacilityDetail.Ratesets");
+        
         if (params.date) {
           queryParams.append("playDate", params.date);
         }
@@ -134,8 +148,8 @@ export class GolfNowService {
           queryParams.append("players", params.players.toString());
         }
 
-        // GolfNow API endpoint (adjust based on actual API docs)
-        const url = `${this.baseUrl}/facilities?${queryParams.toString()}`;
+        // GolfNow API endpoint: /rest/channel/{channelId}/facilities
+        const url = `${this.baseUrl}/channel/${this.channelId}/facilities?${queryParams.toString()}`;
         const response = await fetch(url, {
           method: "GET",
           headers: this.getHeaders(),
@@ -190,7 +204,7 @@ export class GolfNowService {
    * Get course details by ID
    */
   async getCourseById(courseId: string): Promise<Course | null> {
-    if (this.isProduction && this.apiKey) {
+    if (this.isProduction) {
       try {
         const url = `${this.baseUrl}/facilities/${courseId}`;
         const response = await fetch(url, {
@@ -222,7 +236,7 @@ export class GolfNowService {
     date: string,
     players: number = 4
   ): Promise<TeeTimeSlot[]> {
-    if (this.isProduction && this.apiKey) {
+    if (this.isProduction) {
       try {
         const queryParams = new URLSearchParams({
           facilityId: courseId,
@@ -276,7 +290,7 @@ export class GolfNowService {
    * Book a tee time through GolfNow
    */
   async bookTeeTime(request: BookingRequest): Promise<BookingResponse> {
-    if (this.isProduction && this.apiKey) {
+    if (this.isProduction) {
       try {
         const bookingPayload = {
           facilityId: request.courseId,
