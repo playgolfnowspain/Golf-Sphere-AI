@@ -66,7 +66,7 @@ let chatStorage: IChatStorage = new MockChatStorage();
 async function initializeChatStorage(): Promise<IChatStorage> {
   if (process.env.DATABASE_URL) {
     try {
-      const { db } = await import("../../db");
+      const { db } = await import("../db");
       const { conversations, messages } = await import("@shared/schema");
       const { eq, desc } = await import("drizzle-orm");
 
