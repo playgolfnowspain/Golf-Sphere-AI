@@ -22,10 +22,16 @@ Railway is great for full-stack Node.js apps with databases.
 PORT=5000
 NODE_ENV=production
 DATABASE_URL=your_postgres_url (Railway can provision one)
-OPENAI_API_KEY=your_openai_key (optional - for chat)
+OPENAI_API_KEY=your_openai_key (optional - for chat + article agent)
 OPENAI_BASE_URL=https://api.openai.com/v1 (optional)
-GOLFNOW_API_KEY=your_golfnow_key (optional - for real bookings)
+PERPLEXITY_API_KEY=your_perplexity_key (optional)
+AI_PROVIDER=openai (optional)
+GOLFNOW_USERNAME=your_golfnow_username (optional - for real bookings)
+GOLFNOW_PASSWORD=your_golfnow_password (optional)
+GOLFNOW_CHANNEL_ID=your_golfnow_channel_id (optional)
 GOLFNOW_AFFILIATE_ID=your_affiliate_id (optional)
+ARTICLE_AGENT_CRON=0 6 * * * (optional)
+ARTICLE_AGENT_TZ=Europe/Madrid (optional)
 ```
 
 ### Option 2: Render
@@ -92,17 +98,31 @@ PORT=5000  # Or whatever port your host assigns
 DATABASE_URL=postgresql://user:password@host:5432/dbname
 ```
 
-### OpenAI (for chatbot):
+### AI Providers (chat + article agent):
 ```bash
 OPENAI_API_KEY=sk-...
 OPENAI_BASE_URL=https://api.openai.com/v1
+PERPLEXITY_API_KEY=pplx-...
+AI_PROVIDER=openai
+```
+
+### Article Agent (daily auto-article):
+```bash
+ARTICLE_AGENT_ENABLED=true
+ARTICLE_AGENT_CRON=0 6 * * *  # 6:00 AM daily
+ARTICLE_AGENT_TZ=Europe/Madrid
+ARTICLE_AGENT_TOKEN=your_secret_token  # optional for manual trigger
+ARTICLE_AGENT_BOOTSTRAP_ON_STARTUP=true  # generate batch on deploy
+ARTICLE_AGENT_TOPICS=Costa del Sol golf courses|Mallorca golf week itinerary|Barcelona and Girona golf itinerary|Canary Islands winter golf guide|Hidden gems in Spain for golf travelers
 ```
 
 ### GolfNow (for real bookings):
 ```bash
-GOLFNOW_API_KEY=your_key
+GOLFNOW_USERNAME=your_username
+GOLFNOW_PASSWORD=your_password
+GOLFNOW_CHANNEL_ID=your_channel_id
 GOLFNOW_AFFILIATE_ID=your_id
-GOLFNOW_BASE_URL=https://api.golfnow.com/v1
+GOLFNOW_BASE_URL=https://sandbox.api.gnsvc.com/rest
 ```
 
 ## Build & Deploy

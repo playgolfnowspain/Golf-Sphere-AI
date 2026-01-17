@@ -31,7 +31,6 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/articles" className="hover:text-primary transition-colors">Articles</Link></li>
               <li><Link href="/podcasts" className="hover:text-primary transition-colors">Podcasts</Link></li>
-              <li><Link href="/book" className="hover:text-primary transition-colors">Book Tee Time</Link></li>
             </ul>
           </div>
 
@@ -89,7 +88,7 @@ export function Footer() {
             </a>
           </div>
           <div className="flex gap-2 items-center">
-            <span>Powered by GolfNow</span>
+            <span>Powered by PlayGolfSpainNow AI</span>
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
           </div>
         </div>

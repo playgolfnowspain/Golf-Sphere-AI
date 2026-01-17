@@ -12,7 +12,6 @@ export function Navigation() {
     { href: "/", label: "Home" },
     { href: "/articles", label: "Articles" },
     { href: "/podcasts", label: "Podcasts" },
-    { href: "/book", label: "Book Tee Time" },
   ];
 
   return (
@@ -48,11 +47,6 @@ export function Navigation() {
               )}
             </Link>
           ))}
-          <Link href="/book">
-            <button className="btn-primary">
-              Book Now
-            </button>
-          </Link>
         </div>
 
         {/* Mobile Menu Toggle */}

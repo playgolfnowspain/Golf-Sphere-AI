@@ -9,7 +9,6 @@ import Articles from "@/pages/Articles";
 import ArticleDetail from "@/pages/ArticleDetail";
 import Podcasts from "@/pages/Podcasts";
 import PodcastDetail from "@/pages/PodcastDetail";
-import Book from "@/pages/Book";
 import NotFound from "@/pages/not-found";
 
 import { Navigation } from "@/components/Navigation";
@@ -24,7 +23,6 @@ function Router() {
       <Route path="/articles/:slug" component={ArticleDetail} />
       <Route path="/podcasts" component={Podcasts} />
       <Route path="/podcasts/:slug" component={PodcastDetail} />
-      <Route path="/book" component={Book} />
       <Route component={NotFound} />
     </Switch>
   );

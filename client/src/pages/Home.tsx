@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { useArticles, usePodcasts } from "@/hooks/use-content";
-import { Calendar, Play, ArrowRight, Star } from "lucide-react";
+import { Play, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 
@@ -40,7 +40,7 @@ export default function Home() {
               </span>
             </h1>
             <p className="text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed font-light">
-              Experience world-class courses, book tee times instantly, and discover hidden gems through our AI-curated guides.
+              Experience world-class courses, plan your next trip, and discover hidden gems through our AI-curated guides.
             </p>
           </motion.div>
 
@@ -50,14 +50,14 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Link href="/book">
+            <Link href="/articles">
               <button className="h-14 px-8 rounded-full bg-primary text-white font-semibold text-lg hover:bg-primary/90 transition-all shadow-xl shadow-primary/30 hover:-translate-y-1">
-                Book a Tee Time
+                Explore Guides
               </button>
             </Link>
-            <Link href="/articles">
+            <Link href="/podcasts">
               <button className="h-14 px-8 rounded-full bg-white/10 backdrop-blur-md border border-white/30 text-white font-semibold text-lg hover:bg-white/20 transition-all hover:-translate-y-1">
-                Explore Courses
+                Listen to Podcasts
               </button>
             </Link>
           </motion.div>
@@ -116,53 +116,6 @@ export default function Home() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* Booking Promo */}
-      <section className="bg-secondary/30 py-20 border-y border-border/50">
-        <div className="container-wide">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1 space-y-6">
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                <Star className="w-4 h-4 fill-primary" /> Powered by GolfNow
-              </span>
-              <h2 className="text-4xl md:text-5xl font-display leading-tight">
-                Seamless Tee Time <br/>Bookings across Spain
-              </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                Connect directly with over 500 golf courses. Real-time availability, instant confirmation, and the best rates guaranteed. No booking fees, ever.
-              </p>
-              <ul className="space-y-3">
-                {['Instant Confirmation', 'No Booking Fees', 'Best Price Guarantee', '24/7 Support'].map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-foreground font-medium">
-                    <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="pt-4">
-                <Link href="/book">
-                  <button className="btn-primary">
-                    Start Booking
-                  </button>
-                </Link>
-              </div>
-            </div>
-            <div className="order-1 lg:order-2 relative">
-              {/* golf course map spain tablet mockup */}
-              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl border-4 border-white rotate-2 transform hover:rotate-0 transition-transform duration-500">
-                <img 
-                  src="https://images.unsplash.com/photo-1628624747186-a941c476b7ef?q=80&w=2070&auto=format&fit=crop" 
-                  alt="Golf booking app interface" 
-                  className="w-full h-auto"
-                />
-              </div>
-              <div className="absolute top-10 -right-10 w-full h-full bg-primary/5 rounded-3xl -z-0" />
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* Latest Podcasts */}
