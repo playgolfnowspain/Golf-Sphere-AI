@@ -9,22 +9,22 @@ Add these records at your domain registrar:
 **Option A - If your registrar supports CNAME for root domain:**
 - **Type:** `CNAME` or `ALIAS`
 - **Name/Host:** `@` (or leave blank, or enter `playgolfspainnow.com`)
-- **Value/Target:** `6kecmze6.up.railway.app`
+- **Value/Target:** `uvfsnsds.up.railway.app`
 - **TTL:** 3600 (or default)
 
 **Option B - If your registrar doesn't support CNAME on root (common):**
 - **Type:** `ALIAS` or `ANAME` (if available)
 - **Name/Host:** `@` (or blank)
-- **Value/Target:** `6kecmze6.up.railway.app`
+- **Value/Target:** `uvfsnsds.up.railway.app`
 
 **Option C - If only A records allowed:**
-You'll need to get Railway's IP address. Contact Railway support or use a DNS lookup tool to find the IP of `6kecmze6.up.railway.app`.
+You'll need to get Railway's IP address. Contact Railway support or use a DNS lookup tool to find the IP of `uvfsnsds.up.railway.app`.
 
 ### Record 2: WWW Subdomain (www.playgolfspainnow.com)
 
 - **Type:** `CNAME`
 - **Name/Host:** `www`
-- **Value/Target:** `6kecmze6.up.railway.app`
+- **Value/Target:** `uvfsnsds.up.railway.app`
 - **TTL:** 3600 (or default)
 
 ## Step-by-Step Instructions by Registrar
@@ -91,7 +91,7 @@ Both should point to Railway's infrastructure.
 - Clear your browser cache and try again
 
 ### Domain not resolving
-- Double-check the CNAME value matches exactly: `6kecmze6.up.railway.app`
+- Double-check the CNAME value matches exactly: `uvfsnsds.up.railway.app`
 - Ensure no conflicting records (remove old A records for @ if they exist)
 - Wait longer for DNS propagation
 
@@ -108,6 +108,6 @@ Both should point to Railway's infrastructure.
 
 ---
 
-**Railway CNAME Target:** `6kecmze6.up.railway.app`  
+**Railway CNAME Target:** `uvfsnsds.up.railway.app`  
 **Domain:** `playgolfspainnow.com`
 

@@ -7,8 +7,7 @@ import { storage } from "../storage";
 // Only initialize OpenAI if credentials are available
 // Supports both standard OpenAI API keys and Replit AI Integration keys
 const openai: OpenAI | null = 
-  (process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY) 
-  && (process.env.OPENAI_BASE_URL || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL)
+  (process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY)
     ? new OpenAI({
         apiKey: process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "",
         baseURL: process.env.OPENAI_BASE_URL || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
@@ -300,7 +299,7 @@ Always be friendly, helpful, and confirm important details before making booking
         iterationCount++;
         
         const completion = await openai.chat.completions.create({
-          model: "gpt-5.1",
+          model: process.env.OPENAI_MODEL || "gpt-4o",
           messages: chatMessages,
           functions: functions,
           function_call: "auto",
