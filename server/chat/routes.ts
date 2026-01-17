@@ -4,15 +4,62 @@ import { chatStorage } from "./storage";
 import { golfNow } from "../services/golfnow";
 import { storage } from "../storage";
 
-// Only initialize OpenAI if credentials are available
-// Supports both standard OpenAI API keys and Replit AI Integration keys
-const openai: OpenAI | null = 
-  (process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY)
-    ? new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "",
-        baseURL: process.env.OPENAI_BASE_URL || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
-      })
-    : null;
+type AIProvider = "openai" | "perplexity";
+
+// Build AI client supporting both OpenAI and Perplexity
+function buildAiClient(): { client: OpenAI; provider: AIProvider; model: string } | null {
+  const openaiApiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+  const openaiBaseUrl = process.env.OPENAI_BASE_URL || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
+  const perplexityBaseUrl = process.env.PERPLEXITY_BASE_URL || "https://api.perplexity.ai";
+
+  const providerPreference = process.env.AI_PROVIDER;
+
+  // Prefer Perplexity if configured and preferred
+  if (providerPreference === "perplexity" && perplexityApiKey) {
+    return {
+      client: new OpenAI({ apiKey: perplexityApiKey, baseURL: perplexityBaseUrl }),
+      provider: "perplexity",
+      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-128k-online",
+    };
+  }
+
+  // Use OpenAI if configured and preferred
+  if (providerPreference === "openai" && openaiApiKey) {
+    return {
+      client: new OpenAI({ apiKey: openaiApiKey, baseURL: openaiBaseUrl }),
+      provider: "openai",
+      model: process.env.OPENAI_MODEL || "gpt-4o",
+    };
+  }
+
+  // Fallback: try Perplexity first (good for real-time golf info), then OpenAI
+  if (perplexityApiKey) {
+    return {
+      client: new OpenAI({ apiKey: perplexityApiKey, baseURL: perplexityBaseUrl }),
+      provider: "perplexity",
+      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-128k-online",
+    };
+  }
+
+  if (openaiApiKey) {
+    return {
+      client: new OpenAI({ apiKey: openaiApiKey, baseURL: openaiBaseUrl }),
+      provider: "openai",
+      model: process.env.OPENAI_MODEL || "gpt-4o",
+    };
+  }
+
+  return null;
+}
+
+const aiClient = buildAiClient();
+
+if (aiClient) {
+  console.log(`[chat] AI provider: ${aiClient.provider} (model: ${aiClient.model})`);
+} else {
+  console.warn("[chat] No AI provider configured. Set OPENAI_API_KEY or PERPLEXITY_API_KEY.");
+}
 
 export function registerChatRoutes(app: Express): void {
   // Get all conversations
@@ -245,9 +292,9 @@ export function registerChatRoutes(app: Express): void {
   // Send message and get AI response (streaming with function calling)
   app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
-      if (!openai) {
+      if (!aiClient) {
         return res.status(503).json({ 
-          error: "Chat AI not available. OpenAI API credentials not configured." 
+          error: "Chat AI not available. Please configure OPENAI_API_KEY or PERPLEXITY_API_KEY." 
         });
       }
 
@@ -298,11 +345,13 @@ Always be friendly, helpful, and confirm important details before making booking
       while (needsFunctionCall && iterationCount < maxIterations) {
         iterationCount++;
         
-        const completion = await openai.chat.completions.create({
-          model: process.env.OPENAI_MODEL || "gpt-4o",
+        // Perplexity doesn't support function calling, so use simple chat
+        const usesFunctionCalling = aiClient.provider === "openai";
+        
+        const completion = await aiClient.client.chat.completions.create({
+          model: aiClient.model,
           messages: chatMessages,
-          functions: functions,
-          function_call: "auto",
+          ...(usesFunctionCalling ? { functions: functions, function_call: "auto" } : {}),
           stream: true,
           max_completion_tokens: 2048,
         });
@@ -310,12 +359,13 @@ Always be friendly, helpful, and confirm important details before making booking
         let functionCall: { name: string; arguments: string } | null = null;
         needsFunctionCall = false;
         let hasTextContent = false;
+        const usesFunctionCalling = aiClient.provider === "openai";
 
         for await (const chunk of completion) {
           const delta = chunk.choices[0]?.delta;
           
-          // Handle function calls
-          if (delta?.function_call) {
+          // Handle function calls (OpenAI only)
+          if (usesFunctionCalling && delta?.function_call) {
             needsFunctionCall = true;
             if (!functionCall) {
               functionCall = {
@@ -339,8 +389,8 @@ Always be friendly, helpful, and confirm important details before making booking
           }
         }
 
-        // Execute function if called
-        if (functionCall && functionCall.name) {
+        // Execute function if called (OpenAI only)
+        if (usesFunctionCalling && functionCall && functionCall.name) {
           try {
             const args = JSON.parse(functionCall.arguments);
             const functionResult = await executeFunction(functionCall.name, args);

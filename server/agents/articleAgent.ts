@@ -151,6 +151,8 @@ async function generateArticle(options?: {
   const userPrompt = [
     `Write a ~5 minute read (${wordRange.min}-${wordRange.max} words) article about ${topic}.`,
     "Focus on Spanish golf courses: regions, standout courses, what makes them special, and practical tips.",
+    "Include a section titled 'Featured Courses' with 3-5 courses.",
+    "For each course, provide the official website link using Markdown: [Course Name](https://officialsite.example).",
     "Use Markdown with headings, short paragraphs, and a short bullet list.",
     "End with a short call-to-action encouraging readers to book a tee time.",
     "Return ONLY a JSON object with: title, summary, content.",
