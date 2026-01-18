@@ -342,6 +342,10 @@ export class GolfNowService {
 
   // Mock data methods (fallback when API is not configured)
   private getMockCourses(params: CourseSearchParams): Course[] {
+    // Base booking URL - update with your affiliate ID when you have one
+    const baseBookingUrl = process.env.AFFILIATE_BOOKING_URL || "https://www.greenfee365.com";
+    const affiliateParam = this.affiliateId ? `?affiliate_id=${this.affiliateId}` : "";
+
     const mockCourses: Course[] = [
       {
         id: "valderrama",
@@ -354,11 +358,11 @@ export class GolfNowService {
         description: "One of Europe's most prestigious courses, host to the 1997 Ryder Cup.",
         imageUrl: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?auto=format&fit=crop&q=80&w=1000",
         availableSlots: [],
-        affiliateUrl: this.affiliateId ? `https://www.golfnow.com/tee-times/facility/valderrama?affiliate_id=${this.affiliateId}` : undefined,
+        affiliateUrl: `${baseBookingUrl}/en/golf-club/spain/andalucia/real-club-valderrama${affiliateParam}`,
       },
       {
         id: "sotogrande",
-        name: "Sotogrande Old Course",
+        name: "Real Club de Golf Sotogrande",
         location: "Sotogrande",
         region: "Costa del Sol",
         price: 180,
@@ -367,20 +371,59 @@ export class GolfNowService {
         description: "A beautiful Robert Trent Jones Sr. design with stunning views.",
         imageUrl: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&q=80&w=1000",
         availableSlots: [],
-        affiliateUrl: this.affiliateId ? `https://www.golfnow.com/tee-times/facility/sotogrande?affiliate_id=${this.affiliateId}` : undefined,
+        affiliateUrl: `${baseBookingUrl}/en/golf-club/spain/andalucia/real-club-de-golf-sotogrande${affiliateParam}`,
       },
       {
         id: "finca-cortesin",
-        name: "Finca Cortesin",
+        name: "Finca Cortesin Golf Club",
         location: "Casares",
         region: "Costa del Sol",
         price: 280,
         currency: "EUR",
         rating: 4.8,
-        description: "Luxury resort course with impeccable conditions.",
+        description: "Luxury resort course with impeccable conditions, host of the Solheim Cup 2023.",
         imageUrl: "https://images.unsplash.com/photo-1628624747186-a941c476b7ef?auto=format&fit=crop&q=80&w=1000",
         availableSlots: [],
-        affiliateUrl: this.affiliateId ? `https://www.golfnow.com/tee-times/facility/finca-cortesin?affiliate_id=${this.affiliateId}` : undefined,
+        affiliateUrl: `${baseBookingUrl}/en/golf-club/spain/andalucia/finca-cortesin-golf-club${affiliateParam}`,
+      },
+      {
+        id: "la-cala-america",
+        name: "La Cala Resort - America Course",
+        location: "Mijas",
+        region: "Costa del Sol",
+        price: 95,
+        currency: "EUR",
+        rating: 4.5,
+        description: "Challenging course with stunning mountain and sea views.",
+        imageUrl: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?auto=format&fit=crop&q=80&w=1000",
+        availableSlots: [],
+        affiliateUrl: `${baseBookingUrl}/en/golf-club/spain/andalucia/la-cala-resort${affiliateParam}`,
+      },
+      {
+        id: "los-naranjos",
+        name: "Los Naranjos Golf Club",
+        location: "Marbella",
+        region: "Costa del Sol",
+        price: 120,
+        currency: "EUR",
+        rating: 4.6,
+        description: "Championship course designed by Robert Trent Jones Sr. in Nueva Andalucia.",
+        imageUrl: "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&q=80&w=1000",
+        availableSlots: [],
+        affiliateUrl: `${baseBookingUrl}/en/golf-club/spain/andalucia/los-naranjos-golf-club${affiliateParam}`,
+      },
+      {
+        id: "aloha-golf",
+        name: "Aloha Golf Club",
+        location: "Marbella",
+        region: "Costa del Sol",
+        price: 130,
+        currency: "EUR",
+        rating: 4.6,
+        description: "Beautiful Javier Arana designed course in the heart of Golf Valley.",
+        imageUrl: "https://images.unsplash.com/photo-1628624747186-a941c476b7ef?auto=format&fit=crop&q=80&w=1000",
+        availableSlots: [],
+        affiliateUrl: `${baseBookingUrl}/en/golf-club/spain/andalucia/aloha-golf-club${affiliateParam}`,
       },
     ];
 

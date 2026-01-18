@@ -256,8 +256,10 @@ export function registerChatRoutes(app: Express): void {
             currency: c.currency,
             rating: c.rating,
             description: c.description,
+            bookingUrl: c.affiliateUrl || `https://www.greenfee365.com/en/golf-club/spain/${c.id}`,
           })),
           count: courses.length,
+          note: "IMPORTANT: Always include the bookingUrl as a clickable link for each course in your response.",
         };
       }
       case "get_tee_times": {
@@ -364,6 +366,23 @@ BOOKING FLOW:
 3. Collect: name, email, date, time, number of players
 4. Confirm details before booking
 5. Complete booking with book_tee_time
+
+IMPORTANT - ALWAYS INCLUDE BOOKING LINKS:
+When mentioning ANY golf course, ALWAYS include a clickable booking link in this format:
+- [Course Name - Book Now](booking_url)
+
+Example response format:
+"Here are some great courses in Costa del Sol:
+
+1. **Real Club Valderrama** - €350 - Rating: 4.9/5
+   One of Europe's most prestigious courses.
+   [Book Valderrama Now](https://www.greenfee365.com/course/valderrama)
+
+2. **Finca Cortesin** - €280 - Rating: 4.8/5
+   Luxury resort with impeccable conditions.
+   [Book Finca Cortesin](https://www.greenfee365.com/course/finca-cortesin)"
+
+If the course data includes an affiliateUrl or bookingUrl, use that. Otherwise, construct a link to greenfee365.com/course/[course-name-slug].
 
 Be friendly, helpful, and proactive. If information seems outdated, use web_search_golf to get current data.`;
 
