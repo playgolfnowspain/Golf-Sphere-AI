@@ -4,61 +4,71 @@ import { chatStorage } from "./storage";
 import { golfNow } from "../services/golfnow";
 import { storage } from "../storage";
 
-type AIProvider = "openai" | "perplexity";
+// Initialize OpenAI client for conversation and function calling
+const openaiClient = process.env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+    })
+  : null;
 
-// Build AI client supporting both OpenAI and Perplexity
-function buildAiClient(): { client: OpenAI; provider: AIProvider; model: string } | null {
-  const openaiApiKey = process.env.OPENAI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-  const openaiBaseUrl = process.env.OPENAI_BASE_URL || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const perplexityApiKey = process.env.PERPLEXITY_API_KEY;
-  const perplexityBaseUrl = process.env.PERPLEXITY_BASE_URL || "https://api.perplexity.ai";
+// Initialize Perplexity client for real-time web search
+const perplexityClient = process.env.PERPLEXITY_API_KEY
+  ? new OpenAI({
+      apiKey: process.env.PERPLEXITY_API_KEY,
+      baseURL: process.env.PERPLEXITY_BASE_URL || "https://api.perplexity.ai",
+    })
+  : null;
 
-  const providerPreference = process.env.AI_PROVIDER;
-
-  // Prefer Perplexity if configured and preferred
-  if (providerPreference === "perplexity" && perplexityApiKey) {
-    return {
-      client: new OpenAI({ apiKey: perplexityApiKey, baseURL: perplexityBaseUrl }),
-      provider: "perplexity",
-      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-128k-online",
-    };
-  }
-
-  // Use OpenAI if configured and preferred
-  if (providerPreference === "openai" && openaiApiKey) {
-    return {
-      client: new OpenAI({ apiKey: openaiApiKey, baseURL: openaiBaseUrl }),
-      provider: "openai",
-      model: process.env.OPENAI_MODEL || "gpt-4o",
-    };
-  }
-
-  // Fallback: try Perplexity first (good for real-time golf info), then OpenAI
-  if (perplexityApiKey) {
-    return {
-      client: new OpenAI({ apiKey: perplexityApiKey, baseURL: perplexityBaseUrl }),
-      provider: "perplexity",
-      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-128k-online",
-    };
-  }
-
-  if (openaiApiKey) {
-    return {
-      client: new OpenAI({ apiKey: openaiApiKey, baseURL: openaiBaseUrl }),
-      provider: "openai",
-      model: process.env.OPENAI_MODEL || "gpt-4o",
-    };
-  }
-
-  return null;
+// Log available AI providers
+if (openaiClient) {
+  console.log("[chat] OpenAI configured for conversation & function calling");
+}
+if (perplexityClient) {
+  console.log("[chat] Perplexity configured for real-time golf search");
+}
+if (!openaiClient && !perplexityClient) {
+  console.warn("[chat] No AI provider configured. Set OPENAI_API_KEY and/or PERPLEXITY_API_KEY.");
 }
 
-const aiClient = buildAiClient();
+// Perplexity search for real-time golf information
+async function searchGolfInfoWithPerplexity(query: string): Promise<string> {
+  if (!perplexityClient) {
+    return "Real-time search not available (Perplexity not configured)";
+  }
 
-if (aiClient) {
-  console.log(`[chat] AI provider: ${aiClient.provider} (model: ${aiClient.model})`);
-} else {
-  console.warn("[chat] No AI provider configured. Set OPENAI_API_KEY or PERPLEXITY_API_KEY.");
+  try {
+    console.log(`[Perplexity] Searching: ${query}`);
+    const response = await perplexityClient.chat.completions.create({
+      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-small-128k-online",
+      messages: [
+        {
+          role: "system",
+          content: `You are a golf research assistant specializing in Spanish golf courses.
+Provide accurate, up-to-date information about golf courses in Spain, focusing on:
+- Current green fees and prices
+- Course ratings and reviews
+- Facilities and amenities
+- Contact information
+- Best times to play
+- Weather conditions
+Be concise but thorough. Include specific details when available.`,
+        },
+        {
+          role: "user",
+          content: query,
+        },
+      ],
+      max_tokens: 1024,
+    });
+
+    const result = response.choices[0]?.message?.content || "No results found";
+    console.log(`[Perplexity] Search complete: ${result.substring(0, 100)}...`);
+    return result;
+  } catch (error) {
+    console.error("[Perplexity] Search error:", error);
+    return "Search temporarily unavailable";
+  }
 }
 
 export function registerChatRoutes(app: Express): void {
@@ -113,11 +123,25 @@ export function registerChatRoutes(app: Express): void {
     }
   });
 
-  // Define functions available to the AI
+  // Define functions available to the AI (OpenAI function calling)
   const functions = [
     {
+      name: "web_search_golf",
+      description: "Search the web for real-time golf information using Perplexity AI. Use this for: current prices, latest reviews, weather forecasts, course conditions, recent news, or any information that needs to be up-to-date. This searches the internet for the most current information.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "The search query for golf information (e.g., 'current green fees at Valderrama golf course 2024', 'best golf courses Costa del Sol reviews', 'weather forecast Marbella golf this week')",
+          },
+        },
+        required: ["query"],
+      },
+    },
+    {
       name: "search_golf_courses",
-      description: "Search for available golf courses in Spain. Use this when the user asks about courses, wants to find courses in a location, or needs to see available options.",
+      description: "Search our database for available golf courses in Spain. Use this when the user asks about courses, wants to find courses in a location, or needs to see available options for booking.",
       parameters: {
         type: "object",
         properties: {
@@ -205,6 +229,15 @@ export function registerChatRoutes(app: Express): void {
   // Function implementations
   async function executeFunction(name: string, args: any): Promise<any> {
     switch (name) {
+      case "web_search_golf": {
+        // Use Perplexity for real-time web search
+        const searchResult = await searchGolfInfoWithPerplexity(args.query);
+        return {
+          source: "perplexity_web_search",
+          query: args.query,
+          result: searchResult,
+        };
+      }
       case "search_golf_courses": {
         const courses = await golfNow.searchCourses({
           location: args.location,
@@ -213,6 +246,7 @@ export function registerChatRoutes(app: Express): void {
           players: args.players || 4,
         });
         return {
+          source: "internal_database",
           courses: courses.map(c => ({
             id: c.id,
             name: c.name,
@@ -292,9 +326,10 @@ export function registerChatRoutes(app: Express): void {
   // Send message and get AI response (streaming with function calling)
   app.post("/api/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
-      if (!aiClient) {
-        return res.status(503).json({ 
-          error: "Chat AI not available. Please configure OPENAI_API_KEY or PERPLEXITY_API_KEY." 
+      // Require at least one AI provider
+      if (!openaiClient && !perplexityClient) {
+        return res.status(503).json({
+          error: "Chat AI not available. Please configure OPENAI_API_KEY or PERPLEXITY_API_KEY."
         });
       }
 
@@ -306,31 +341,31 @@ export function registerChatRoutes(app: Express): void {
 
       // Get conversation history for context
       const messages = await chatStorage.getMessagesByConversation(conversationId);
-      
-      // Build chat messages with system prompt
-      const systemPrompt = `You are a helpful golf booking assistant for PlayGolfSpainNow. You help users find and book golf courses in Spain through GolfNow's booking platform. 
 
-Key capabilities:
-- Search for golf courses by location, name, or region
-- Show available tee times for specific dates
-- Book tee times directly when users confirm
+      // Build system prompt
+      const systemPrompt = `You are a helpful golf booking assistant for PlayGolfSpainNow. You help users find and book golf courses in Spain.
 
-When users want to book:
-1. First search for courses if they haven't specified one
-2. Show available tee times for their preferred date
-3. Collect all required information: name, email, date, time, number of players
-4. Confirm the booking details before booking
-5. Book the tee time using the book_tee_time function
+KEY CAPABILITIES:
+1. **Web Search (Perplexity)**: Use web_search_golf for real-time info like current prices, reviews, weather, course conditions, or any up-to-date information.
+2. **Course Database**: Use search_golf_courses to find courses available for booking in our system.
+3. **Tee Times**: Use get_tee_times to check availability for a specific course.
+4. **Booking**: Use book_tee_time to complete a booking (requires all user details).
 
-Always be friendly, helpful, and confirm important details before making bookings.`;
+WHEN TO USE EACH:
+- User asks "what are the best courses?" → Use web_search_golf for current reviews/rankings
+- User asks "what courses can I book?" → Use search_golf_courses for our database
+- User asks "how much is Valderrama?" → Use web_search_golf for current pricing
+- User asks "show me tee times for tomorrow" → Use search_golf_courses then get_tee_times
+- User wants to book → Collect details, then use book_tee_time
 
-      const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-        { role: "system", content: systemPrompt },
-        ...messages.map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
-      ];
+BOOKING FLOW:
+1. Search courses or get info user needs
+2. Show available tee times for their date
+3. Collect: name, email, date, time, number of players
+4. Confirm details before booking
+5. Complete booking with book_tee_time
+
+Be friendly, helpful, and proactive. If information seems outdated, use web_search_golf to get current data.`;
 
       // Set up SSE
       res.setHeader("Content-Type", "text/event-stream");
@@ -338,95 +373,136 @@ Always be friendly, helpful, and confirm important details before making booking
       res.setHeader("Connection", "keep-alive");
 
       let fullResponse = "";
-      let needsFunctionCall = true;
-      let iterationCount = 0;
-      const maxIterations = 5; // Prevent infinite loops
 
-      while (needsFunctionCall && iterationCount < maxIterations) {
-        iterationCount++;
-        
-        // Perplexity doesn't support function calling, so use simple chat
-        const usesFunctionCalling = aiClient.provider === "openai";
-        
-        const completion = await aiClient.client.chat.completions.create({
-          model: aiClient.model,
-          messages: chatMessages,
-          ...(usesFunctionCalling ? { functions: functions, function_call: "auto" } : {}),
-          stream: true,
-          max_completion_tokens: 2048,
-        });
+      // Use OpenAI if available (supports function calling), otherwise fallback to Perplexity
+      if (openaiClient) {
+        // OpenAI with function calling
+        const chatMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+          { role: "system", content: systemPrompt },
+          ...messages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+        ];
 
-        let functionCall: { name: string; arguments: string } | null = null;
-        needsFunctionCall = false;
-        let hasTextContent = false;
+        let needsFunctionCall = true;
+        let iterationCount = 0;
+        const maxIterations = 5;
 
-        for await (const chunk of completion) {
-          const delta = chunk.choices[0]?.delta;
-          
-          // Handle function calls (OpenAI only)
-          if (usesFunctionCalling && delta?.function_call) {
-            needsFunctionCall = true;
-            if (!functionCall) {
-              functionCall = {
-                name: delta.function_call.name || "",
-                arguments: delta.function_call.arguments || "",
-              };
-            } else {
-              if (delta.function_call.name) functionCall.name = delta.function_call.name;
-              if (delta.function_call.arguments) {
-                functionCall.arguments += delta.function_call.arguments;
+        while (needsFunctionCall && iterationCount < maxIterations) {
+          iterationCount++;
+
+          const completion = await openaiClient.chat.completions.create({
+            model: process.env.OPENAI_MODEL || "gpt-4o",
+            messages: chatMessages,
+            functions: functions,
+            function_call: "auto",
+            stream: true,
+            max_completion_tokens: 2048,
+          });
+
+          let functionCall: { name: string; arguments: string } | null = null;
+          needsFunctionCall = false;
+
+          for await (const chunk of completion) {
+            const delta = chunk.choices[0]?.delta;
+
+            // Handle function calls
+            if (delta?.function_call) {
+              needsFunctionCall = true;
+              if (!functionCall) {
+                functionCall = {
+                  name: delta.function_call.name || "",
+                  arguments: delta.function_call.arguments || "",
+                };
+              } else {
+                if (delta.function_call.name) functionCall.name = delta.function_call.name;
+                if (delta.function_call.arguments) {
+                  functionCall.arguments += delta.function_call.arguments;
+                }
               }
             }
+
+            // Handle text content
+            const textContent = delta?.content || "";
+            if (textContent) {
+              fullResponse += textContent;
+              res.write(`data: ${JSON.stringify({ content: textContent })}\n\n`);
+            }
           }
 
-          // Handle text content
-          const content = delta?.content || "";
-          if (content) {
-            hasTextContent = true;
-            fullResponse += content;
-            res.write(`data: ${JSON.stringify({ content })}\n\n`);
+          // Execute function if called
+          if (functionCall && functionCall.name) {
+            try {
+              // Notify client that we're searching
+              if (functionCall.name === "web_search_golf") {
+                res.write(`data: ${JSON.stringify({ status: "searching", message: "Searching for latest golf information..." })}\n\n`);
+              }
+
+              const args = JSON.parse(functionCall.arguments);
+              const functionResult = await executeFunction(functionCall.name, args);
+
+              // Add function call and result to conversation
+              chatMessages.push({
+                role: "assistant",
+                content: null,
+                function_call: {
+                  name: functionCall.name,
+                  arguments: functionCall.arguments,
+                },
+              });
+
+              chatMessages.push({
+                role: "function",
+                name: functionCall.name,
+                content: JSON.stringify(functionResult),
+              });
+
+              // Special handling for booking confirmations
+              if (functionCall.name === "book_tee_time" && functionResult.success) {
+                const confirmationMsg = `\n\n✅ **Booking Confirmed!**\n\n**Confirmation Number:** ${functionResult.confirmationNumber}\n**Course:** ${functionResult.courseName}\n**Date:** ${functionResult.playDate}\n**Time:** ${functionResult.teeTime}\n**Total:** ${functionResult.totalPrice} ${functionResult.currency}\n\nYour booking confirmation has been sent to ${args.userEmail}. Enjoy your round!`;
+                fullResponse += confirmationMsg;
+                res.write(`data: ${JSON.stringify({ content: confirmationMsg })}\n\n`);
+                needsFunctionCall = false;
+              }
+            } catch (error) {
+              console.error("Function execution error:", error);
+              chatMessages.push({
+                role: "function",
+                name: functionCall.name,
+                content: JSON.stringify({ error: "Function execution failed" }),
+              });
+            }
+          } else {
+            needsFunctionCall = false;
           }
         }
+      } else if (perplexityClient) {
+        // Fallback: Perplexity only (no function calling, but good for search)
+        const chatMessages = [
+          {
+            role: "system" as const,
+            content: `You are a helpful golf assistant for PlayGolfSpainNow. Help users find information about golf courses in Spain. You have access to real-time web search, so provide current and accurate information about courses, prices, reviews, and availability. Be friendly and helpful.`
+          },
+          ...messages.map((m) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+          })),
+        ];
 
-        // Execute function if called (OpenAI only)
-        if (usesFunctionCalling && functionCall && functionCall.name) {
-          try {
-            const args = JSON.parse(functionCall.arguments);
-            const functionResult = await executeFunction(functionCall.name, args);
+        const completion = await perplexityClient.chat.completions.create({
+          model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-128k-online",
+          messages: chatMessages,
+          stream: true,
+          max_tokens: 2048,
+        });
 
-            // Add function call and result to conversation
-            chatMessages.push({
-              role: "assistant",
-              content: null,
-              function_call: {
-                name: functionCall.name,
-                arguments: functionCall.arguments,
-              },
-            });
-
-            chatMessages.push({
-              role: "function",
-              name: functionCall.name,
-              content: JSON.stringify(functionResult),
-            });
-
-            // Special handling for booking confirmations
-            if (functionCall.name === "book_tee_time" && functionResult.success) {
-              const confirmationMsg = `\n\n✅ **Booking Confirmed!**\n\n**Confirmation Number:** ${functionResult.confirmationNumber}\n**Course:** ${functionResult.courseName}\n**Date:** ${functionResult.playDate}\n**Time:** ${functionResult.teeTime}\n**Total:** ${functionResult.totalPrice} ${functionResult.currency}\n\nYour booking confirmation has been sent to ${args.userEmail}. Enjoy your round!`;
-              fullResponse += confirmationMsg;
-              res.write(`data: ${JSON.stringify({ content: confirmationMsg })}\n\n`);
-              needsFunctionCall = false;
-            }
-          } catch (error) {
-            console.error("Function execution error:", error);
-            chatMessages.push({
-              role: "function",
-              name: functionCall.name,
-              content: JSON.stringify({ error: "Function execution failed" }),
-            });
+        for await (const chunk of completion) {
+          const textContent = chunk.choices[0]?.delta?.content || "";
+          if (textContent) {
+            fullResponse += textContent;
+            res.write(`data: ${JSON.stringify({ content: textContent })}\n\n`);
           }
-        } else {
-          needsFunctionCall = false;
         }
       }
 
@@ -439,7 +515,6 @@ Always be friendly, helpful, and confirm important details before making booking
       res.end();
     } catch (error) {
       console.error("Error sending message:", error);
-      // Check if headers already sent (SSE streaming started)
       if (res.headersSent) {
         res.write(`data: ${JSON.stringify({ error: "Failed to send message" })}\n\n`);
         res.end();
@@ -448,5 +523,20 @@ Always be friendly, helpful, and confirm important details before making booking
       }
     }
   });
-}
 
+  // Health check endpoint for AI status
+  app.get("/api/chat/status", (req: Request, res: Response) => {
+    res.json({
+      status: "ok",
+      providers: {
+        openai: !!openaiClient,
+        perplexity: !!perplexityClient,
+      },
+      capabilities: {
+        functionCalling: !!openaiClient,
+        webSearch: !!perplexityClient,
+        booking: !!openaiClient,
+      },
+    });
+  });
+}
