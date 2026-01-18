@@ -359,7 +359,6 @@ Always be friendly, helpful, and confirm important details before making booking
         let functionCall: { name: string; arguments: string } | null = null;
         needsFunctionCall = false;
         let hasTextContent = false;
-        const usesFunctionCalling = aiClient.provider === "openai";
 
         for await (const chunk of completion) {
           const delta = chunk.choices[0]?.delta;
