@@ -54,8 +54,9 @@ export async function registerRoutes(
     const count = typeof req.body?.count === "number" ? req.body.count : undefined;
     const topic = typeof req.body?.topic === "string" ? req.body.topic : undefined;
     const topics = Array.isArray(req.body?.topics) ? req.body.topics.filter((item: unknown) => typeof item === "string") : undefined;
+    const skipDailyCheck = req.body?.skipDailyCheck === true;
 
-    await runArticleAgent({ count, topic, topics });
+    await runArticleAgent({ count, topic, topics, skipDailyCheck });
     res.status(202).json({ message: "Article agent triggered", count: count ?? 1 });
   });
 

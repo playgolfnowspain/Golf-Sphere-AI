@@ -64,15 +64,14 @@ class MockChatStorage implements IChatStorage {
 let chatStorage: IChatStorage = new MockChatStorage();
 
 async function initializeChatStorage(): Promise<IChatStorage> {
-  if (process.env.DATABASE_URL) {
-    try {
-      const { db } = await import("../db");
+  const { initializeStorageWithFallback } = await import("../storage-utils");
+
+  return initializeStorageWithFallback({
+    mockStorage: new MockChatStorage(),
+    logPrefix: "chat-storage",
+    databaseStorageFactory: async (db) => {
       const { conversations, messages } = await import("@shared/schema");
       const { eq, desc } = await import("drizzle-orm");
-
-      if (!db) {
-        throw new Error("Database not initialized");
-      }
 
       const storage: IChatStorage = {
         async getConversation(id: number) {
@@ -90,7 +89,7 @@ async function initializeChatStorage(): Promise<IChatStorage> {
         },
 
         async deleteConversation(id: number) {
-          await db.delete(messages).where(eq(messages.conversationId, id));
+          // Messages are automatically deleted via cascade delete on the database
           await db.delete(conversations).where(eq(conversations.id, id));
         },
 
@@ -103,16 +102,10 @@ async function initializeChatStorage(): Promise<IChatStorage> {
           return message;
         },
       };
-      console.log("[chat-storage] Using database storage");
+
       return storage;
-    } catch (error) {
-      console.log("[chat-storage] Database connection failed, using mock storage:", error instanceof Error ? error.message : error);
-      return new MockChatStorage();
-    }
-  } else {
-    console.log("[chat-storage] No DATABASE_URL set, using mock storage for development");
-    return new MockChatStorage();
-  }
+    },
+  });
 }
 
 // Initialize chat storage asynchronously

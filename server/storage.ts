@@ -1,5 +1,10 @@
 import { type Article, type InsertArticle, type Podcast, type InsertPodcast, type Booking, type InsertBooking, type NewsletterSubscriber, type InsertNewsletterSubscriber } from "@shared/schema";
 
+// Helper function to normalize email addresses
+function normalizeEmail(email: string): string {
+  return email.toLowerCase();
+}
+
 export interface IStorage {
   // Articles
   getArticles(): Promise<Article[]>;
@@ -422,12 +427,13 @@ The famous courses are great, but the hidden gems are what make Spanish golf fee
   private subscribers: NewsletterSubscriber[] = [];
 
   async subscribeToNewsletter(email: string): Promise<NewsletterSubscriber> {
+    const normalizedEmail = normalizeEmail(email);
     // Check if already subscribed
-    const existing = this.subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
+    const existing = this.subscribers.find(s => s.email === normalizedEmail);
     if (existing && existing.subscribed) {
       throw new Error("Email already subscribed");
     }
-    
+
     if (existing) {
       // Reactivate subscription
       existing.subscribed = true;
@@ -436,7 +442,7 @@ The famous courses are great, but the hidden gems are what make Spanish golf fee
 
     const subscriber: NewsletterSubscriber = {
       id: this.subscribers.length + 1,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       subscribed: true,
       createdAt: new Date(),
     };
@@ -445,7 +451,8 @@ The famous courses are great, but the hidden gems are what make Spanish golf fee
   }
 
   async getSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined> {
-    return this.subscribers.find(s => s.email.toLowerCase() === email.toLowerCase());
+    const normalizedEmail = normalizeEmail(email);
+    return this.subscribers.find(s => s.email === normalizedEmail);
   }
 }
 
@@ -454,99 +461,87 @@ The famous courses are great, but the hidden gems are what make Spanish golf fee
 let storage: IStorage = new MockStorage();
 
 async function initializeStorage(): Promise<IStorage> {
-  if (process.env.DATABASE_URL) {
-    try {
-      // Import database dependencies
-      const { db } = await import("./db");
+  const { initializeStorageWithFallback } = await import("./storage-utils");
+
+  return initializeStorageWithFallback({
+    mockStorage: new MockStorage(),
+    logPrefix: "storage",
+    databaseStorageFactory: async (db) => {
       const { articles, podcasts, bookings, newsletterSubscribers } = await import("@shared/schema");
       const { eq, desc } = await import("drizzle-orm");
 
-      if (!db) {
-        throw new Error("Database not initialized despite DATABASE_URL being set.");
-      }
-
-      // Store db reference for type narrowing
-      const database = db;
-
       class DatabaseStorage implements IStorage {
         async getArticles(): Promise<Article[]> {
-          return await database.select().from(articles).orderBy(desc(articles.createdAt));
+          return await db.select().from(articles).orderBy(desc(articles.createdAt));
         }
 
         async getArticleBySlug(slug: string): Promise<Article | undefined> {
-          const [article] = await database.select().from(articles).where(eq(articles.slug, slug));
+          const [article] = await db.select().from(articles).where(eq(articles.slug, slug));
           return article;
         }
 
         async createArticle(insertArticle: InsertArticle): Promise<Article> {
-          const [article] = await database.insert(articles).values(insertArticle).returning();
+          const [article] = await db.insert(articles).values(insertArticle).returning();
           return article;
         }
 
         async getPodcasts(): Promise<Podcast[]> {
-          return await database.select().from(podcasts).orderBy(desc(podcasts.createdAt));
+          return await db.select().from(podcasts).orderBy(desc(podcasts.createdAt));
         }
 
         async getPodcastBySlug(slug: string): Promise<Podcast | undefined> {
-          const [podcast] = await database.select().from(podcasts).where(eq(podcasts.slug, slug));
+          const [podcast] = await db.select().from(podcasts).where(eq(podcasts.slug, slug));
           return podcast;
         }
 
         async createPodcast(insertPodcast: InsertPodcast): Promise<Podcast> {
-          const [podcast] = await database.insert(podcasts).values(insertPodcast).returning();
+          const [podcast] = await db.insert(podcasts).values(insertPodcast).returning();
           return podcast;
         }
 
         async createBooking(insertBooking: InsertBooking): Promise<Booking> {
-          const [booking] = await database.insert(bookings).values(insertBooking).returning();
+          const [booking] = await db.insert(bookings).values(insertBooking).returning();
           return booking;
         }
 
         async subscribeToNewsletter(email: string): Promise<NewsletterSubscriber> {
+          const normalizedEmail = normalizeEmail(email);
           // Check if already subscribed
-          const existing = await this.getSubscriberByEmail(email);
+          const existing = await this.getSubscriberByEmail(normalizedEmail);
           if (existing && existing.subscribed) {
             throw new Error("Email already subscribed");
           }
 
           if (existing) {
             // Reactivate subscription
-            const [updated] = await database
+            const [updated] = await db
               .update(newsletterSubscribers)
               .set({ subscribed: true })
-              .where(eq(newsletterSubscribers.email, email.toLowerCase()))
+              .where(eq(newsletterSubscribers.email, normalizedEmail))
               .returning();
             return updated;
           }
 
-          const [subscriber] = await database
+          const [subscriber] = await db
             .insert(newsletterSubscribers)
-            .values({ email: email.toLowerCase(), subscribed: true })
+            .values({ email: normalizedEmail, subscribed: true })
             .returning();
           return subscriber;
         }
 
         async getSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined> {
-          const [subscriber] = await database
+          const normalizedEmail = normalizeEmail(email);
+          const [subscriber] = await db
             .select()
             .from(newsletterSubscribers)
-            .where(eq(newsletterSubscribers.email, email.toLowerCase()));
+            .where(eq(newsletterSubscribers.email, normalizedEmail));
           return subscriber;
         }
       }
 
-      console.log("[storage] Using database storage");
       return new DatabaseStorage();
-    } catch (error) {
-      // Database connection failed, use mock storage
-      console.log("[storage] Database connection failed, using mock storage:", error instanceof Error ? error.message : error);
-      return new MockStorage();
-    }
-  } else {
-    // No DATABASE_URL, use mock storage
-    console.log("[storage] No DATABASE_URL set, using mock storage for development");
-    return new MockStorage();
-  }
+    },
+  });
 }
 
 // Initialize storage asynchronously and update when ready
