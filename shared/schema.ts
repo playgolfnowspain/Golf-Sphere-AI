@@ -3,7 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 export * from "./models/chat";
 
-export const articles = pgTable("articles", {
+export const articles = pgTable("golf_articles", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
