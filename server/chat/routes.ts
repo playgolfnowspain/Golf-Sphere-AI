@@ -256,10 +256,9 @@ export function registerChatRoutes(app: Express): void {
             currency: c.currency,
             rating: c.rating,
             description: c.description,
-            bookingUrl: c.affiliateUrl || `https://www.greenfee365.com/en/golf-club/spain/${c.id}`,
+            bookingUrl: c.affiliateUrl,
           })),
           count: courses.length,
-          note: "IMPORTANT: Always include the bookingUrl as a clickable link for each course in your response.",
         };
       }
       case "get_tee_times": {
@@ -345,7 +344,7 @@ export function registerChatRoutes(app: Express): void {
       const messages = await chatStorage.getMessagesByConversation(conversationId);
 
       // Build system prompt
-      const systemPrompt = `You are a helpful golf booking assistant for PlayGolfSpainNow. You help users find and book golf courses in Spain.
+      const systemPrompt = `You are a helpful golf booking assistant for GolfSphere. You help users find and book golf courses in Spain.
 
 KEY CAPABILITIES:
 1. **Web Search (Perplexity)**: Use web_search_golf for real-time info like current prices, reviews, weather, course conditions, or any up-to-date information.
@@ -376,13 +375,13 @@ Example response format:
 
 1. **Real Club Valderrama** - €350 - Rating: 4.9/5
    One of Europe's most prestigious courses.
-   [Book Valderrama Now](https://www.greenfee365.com/course/valderrama)
+   [Book Valderrama Now](booking_url)
 
 2. **Finca Cortesin** - €280 - Rating: 4.8/5
    Luxury resort with impeccable conditions.
-   [Book Finca Cortesin](https://www.greenfee365.com/course/finca-cortesin)"
+   [Book Finca Cortesin](booking_url)"
 
-If the course data includes an affiliateUrl or bookingUrl, use that. Otherwise, construct a link to greenfee365.com/course/[course-name-slug].
+If the course data includes a bookingUrl, use that as the link.
 
 Be friendly, helpful, and proactive. If information seems outdated, use web_search_golf to get current data.`;
 
@@ -501,7 +500,7 @@ Be friendly, helpful, and proactive. If information seems outdated, use web_sear
         const chatMessages = [
           {
             role: "system" as const,
-            content: `You are a helpful golf assistant for PlayGolfSpainNow. Help users find information about golf courses in Spain. You have access to real-time web search, so provide current and accurate information about courses, prices, reviews, and availability. Be friendly and helpful.`
+            content: `You are a helpful golf assistant for GolfSphere. Help users find information about golf courses in Spain. You have access to real-time web search, so provide current and accurate information about courses, prices, reviews, and availability. Be friendly and helpful.`
           },
           ...messages.map((m) => ({
             role: m.role as "user" | "assistant",

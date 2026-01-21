@@ -320,7 +320,7 @@ export class GolfNowService {
         const booking = await response.json();
         
         return {
-          bookingId: booking.bookingId || booking.id || `golfnow-${Date.now()}`,
+          bookingId: booking.bookingId || booking.id || `gs-${Date.now()}`,
           status: booking.status || "confirmed",
           confirmationNumber: booking.confirmationNumber || booking.confirmation || "",
           courseName: request.courseName,
@@ -457,14 +457,14 @@ export class GolfNowService {
   }
 
   private createMockBooking(request: BookingRequest): BookingResponse {
-    const confirmationNumber = `GN${Date.now().toString().slice(-8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    const confirmationNumber = `GS${Date.now().toString().slice(-8)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     const course = this.getMockCourseById(request.courseId);
     const slot = course ? this.getMockTeeTimes(request.courseId, request.playDate, request.playerCount, course)
       .find(s => s.time === request.teeTime) : null;
     const totalPrice = (slot?.price || 200) * request.playerCount;
 
     return {
-      bookingId: `golfnow-${Date.now()}`,
+      bookingId: `gs-${Date.now()}`,
       status: "confirmed",
       confirmationNumber,
       courseName: request.courseName,
