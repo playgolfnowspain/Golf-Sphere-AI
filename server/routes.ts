@@ -56,6 +56,18 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
+  app.patch("/api/articles/:id", async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid article ID" });
+    }
+    const article = await storage.updateArticle(id, req.body);
+    if (!article) {
+      return res.status(404).json({ message: "Article not found" });
+    }
+    res.json(article);
+  });
+
   // Article Agent (manual trigger)
   app.post("/api/agent/articles/run", async (req, res) => {
     const token = process.env.ARTICLE_AGENT_TOKEN;
