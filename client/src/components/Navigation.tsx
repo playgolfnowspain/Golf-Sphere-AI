@@ -1,6 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Menu, X, Globe } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -18,12 +18,10 @@ export function Navigation() {
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-border/40">
       <div className="container-wide flex items-center justify-between h-20">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
-            <Globe className="w-6 h-6 text-white" />
-          </div>
-          <span className="text-xl font-bold font-display tracking-tight text-foreground">
-            PlayGolfSpainNow
+        <Link href="/" className="flex items-center group">
+          <span className="text-2xl font-bold font-display tracking-tight">
+            <span className="text-primary">Golf</span>
+            <span className="text-foreground">Sphere</span>
           </span>
         </Link>
 
