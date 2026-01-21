@@ -10,6 +10,7 @@ export interface IStorage {
   getArticles(): Promise<Article[]>;
   getArticleBySlug(slug: string): Promise<Article | undefined>;
   createArticle(article: InsertArticle): Promise<Article>;
+  deleteArticle(id: number): Promise<boolean>;
 
   // Podcasts
   getPodcasts(): Promise<Podcast[]>;
@@ -249,6 +250,13 @@ The Barcelona and Girona area gives you golf without the resort bubble. You can 
     return article;
   }
 
+  async deleteArticle(id: number): Promise<boolean> {
+    const index = this.articles.findIndex(a => a.id === id);
+    if (index === -1) return false;
+    this.articles.splice(index, 1);
+    return true;
+  }
+
   async getPodcasts(): Promise<Podcast[]> {
     return [...this.podcasts].sort((a, b) => 
       new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
@@ -340,6 +348,11 @@ async function initializeStorage(): Promise<IStorage> {
         async createArticle(insertArticle: InsertArticle): Promise<Article> {
           const [article] = await db.insert(articles).values(insertArticle).returning();
           return article;
+        }
+
+        async deleteArticle(id: number): Promise<boolean> {
+          const result = await db.delete(articles).where(eq(articles.id, id)).returning();
+          return result.length > 0;
         }
 
         async getPodcasts(): Promise<Podcast[]> {
