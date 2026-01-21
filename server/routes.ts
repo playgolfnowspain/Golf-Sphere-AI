@@ -56,7 +56,7 @@ export async function registerRoutes(
     res.json({ success: true });
   });
 
-  app.patch("/api/articles/:id", async (req, res) => {
+  app.put("/api/articles/:id", async (req, res) => {
     const id = parseInt(req.params.id, 10);
     if (isNaN(id)) {
       return res.status(400).json({ message: "Invalid article ID" });
