@@ -5,6 +5,8 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerChatRoutes } from "./chat";
 import { runArticleAgent } from "./agents/articleAgent";
+import { runNewsletterAgent } from "./agents/newsletterAgent";
+import { sendWelcomeEmail, sendSubscriptionNotification } from "./services/email";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -84,6 +86,25 @@ export async function registerRoutes(
     res.status(202).json({ message: "Article agent triggered", count: count ?? 1 });
   });
 
+  // Newsletter Agent (manual trigger)
+  app.post("/api/agent/newsletter/run", async (req, res) => {
+    const token = process.env.NEWSLETTER_AGENT_TOKEN;
+    if (token && req.headers["x-agent-token"] !== token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const result = await runNewsletterAgent();
+    if (result === null) {
+      return res.status(500).json({ message: "Newsletter generation failed or already in progress" });
+    }
+
+    res.status(202).json({
+      message: "Newsletter sent",
+      sent: result.sent,
+      failed: result.failed,
+    });
+  });
+
   // Podcasts Routes
   app.get(api.podcasts.list.path, async (req, res) => {
     const podcasts = await storage.getPodcasts();
@@ -136,6 +157,15 @@ export async function registerRoutes(
     try {
       const input = api.newsletter.subscribe.input.parse(req.body);
       const subscriber = await storage.subscribeToNewsletter(input.email);
+
+      // Send emails asynchronously (don't block the response)
+      Promise.all([
+        sendWelcomeEmail(input.email),
+        sendSubscriptionNotification(input.email),
+      ]).catch((err) => {
+        console.error("[newsletter] Failed to send subscription emails:", err);
+      });
+
       res.status(201).json(subscriber);
     } catch (err) {
       if (err instanceof z.ZodError) {

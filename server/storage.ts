@@ -24,6 +24,7 @@ export interface IStorage {
   // Newsletter
   subscribeToNewsletter(email: string): Promise<NewsletterSubscriber>;
   getSubscriberByEmail(email: string): Promise<NewsletterSubscriber | undefined>;
+  getAllSubscribers(): Promise<NewsletterSubscriber[]>;
 }
 
 // Mock storage for development when database is not available
@@ -327,6 +328,10 @@ The Barcelona and Girona area gives you golf without the resort bubble. You can 
     const normalizedEmail = normalizeEmail(email);
     return this.subscribers.find(s => s.email === normalizedEmail);
   }
+
+  async getAllSubscribers(): Promise<NewsletterSubscriber[]> {
+    return this.subscribers.filter(s => s.subscribed);
+  }
 }
 
 // Try to use database storage, fall back to mock if database is not available
@@ -419,6 +424,13 @@ async function initializeStorage(): Promise<IStorage> {
             .from(newsletterSubscribers)
             .where(eq(newsletterSubscribers.email, normalizedEmail));
           return subscriber;
+        }
+
+        async getAllSubscribers(): Promise<NewsletterSubscriber[]> {
+          return await db
+            .select()
+            .from(newsletterSubscribers)
+            .where(eq(newsletterSubscribers.subscribed, true));
         }
       }
 
