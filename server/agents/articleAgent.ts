@@ -4,23 +4,72 @@ import { storage } from "../storage";
 
 type Provider = "openai" | "perplexity";
 
-const DEFAULT_TOPIC = "Spanish golf courses";
-const DEFAULT_WORD_RANGE = { min: 900, max: 1100 };
+const DEFAULT_WORD_RANGE = { min: 700, max: 900 };
 const DEFAULT_TIMEZONE = "Europe/Madrid";
 const DEFAULT_BATCH_COUNT = 1;
 const DEFAULT_IMAGE_URLS = [
-  "https://images.unsplash.com/photo-1500930289949-4efda8fe6f85?auto=format&fit=crop&q=80&w=1400",
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&q=80&w=1400",
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&q=80&w=1400",
-  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&q=80&w=1400",
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1535131749006-b7f58c99034b?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1592919505780-303950717480?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1611374243147-44a702c2d44c?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1596727362302-b8d891c42ab8?auto=format&fit=crop&q=80&w=1400",
 ];
+
+// Rotating topics for daily variety
+const SPANISH_COURSES = [
+  "Valderrama Golf Club - host of 1997 Ryder Cup",
+  "Real Club de Golf Sotogrande",
+  "Finca Cortesin Golf Club",
+  "PGA Catalunya Resort",
+  "La Reserva Club de Golf Sotogrande",
+  "Real Club Sevilla Golf",
+  "Club de Golf Alcanada in Mallorca",
+  "Golf Costa Adeje in Tenerife",
+  "Real Club de Golf El Prat near Barcelona",
+  "Abama Golf in Tenerife",
+  "Son Gual Golf in Mallorca",
+  "Arabella Golf Son Muntaner in Mallorca",
+  "La Manga Club in Murcia",
+  "Las Colinas Golf in Alicante",
+  "Aloha Golf Club in Marbella",
+  "Los Naranjos Golf Club in Marbella",
+  "Marbella Golf Country Club",
+  "San Roque Club in Cadiz",
+  "Golf Santander in Madrid",
+  "Club de Campo Villa de Madrid",
+];
+
+const WORLD_TOURNAMENTS = [
+  "The Masters at Augusta National",
+  "US Open Championship",
+  "The Open Championship (British Open)",
+  "PGA Championship",
+  "Ryder Cup history and memorable moments",
+  "DP World Tour Championship",
+  "Players Championship at TPC Sawgrass",
+  "WGC Match Play Championship",
+  "Arnold Palmer Invitational",
+  "The Memorial Tournament",
+  "BMW PGA Championship at Wentworth",
+  "Spanish Open history and champions",
+  "Andalucia Masters at Valderrama",
+  "Solheim Cup highlights",
+  "LIV Golf and its impact on professional golf",
+];
+
+function getRandomTopic(): string {
+  const allTopics = [...SPANISH_COURSES, ...WORLD_TOURNAMENTS];
+  const randomIndex = Math.floor(Math.random() * allTopics.length);
+  return allTopics[randomIndex];
+}
+
 const DEFAULT_BOOTSTRAP_TOPICS = [
-  "Costa del Sol golf courses and trip planning",
-  "Mallorca golf week itinerary and resort courses",
-  "Barcelona and Girona golf itinerary",
-  "Canary Islands winter golf guide",
-  "Hidden gems in Spain for golf travelers",
+  "Valderrama Golf Club - host of 1997 Ryder Cup",
+  "The Masters at Augusta National",
+  "PGA Catalunya Resort",
+  "Ryder Cup history and memorable moments",
+  "Finca Cortesin Golf Club",
 ];
 
 let running = false;
@@ -130,7 +179,7 @@ async function generateArticle(options?: {
     return null;
   }
 
-  const topic = options?.topic || process.env.ARTICLE_AGENT_TOPIC || DEFAULT_TOPIC;
+  const topic = options?.topic || process.env.ARTICLE_AGENT_TOPIC || getRandomTopic();
   const timeZone = process.env.ARTICLE_AGENT_TZ || DEFAULT_TIMEZONE;
   const todayKey = formatDateInTz(new Date(), timeZone);
   const existing = await storage.getArticles();
@@ -147,17 +196,36 @@ async function generateArticle(options?: {
 
   const wordRange = DEFAULT_WORD_RANGE;
   const systemPrompt =
-    "You are a professional golf travel writer. Write detailed, practical, and inspiring guides for golfers.";
-  const userPrompt = [
-    `Write a ~5 minute read (${wordRange.min}-${wordRange.max} words) article about ${topic}.`,
-    "Focus on Spanish golf courses: regions, standout courses, what makes them special, and practical tips.",
-    "Include a section titled 'Featured Courses' with 3-5 courses.",
-    "For each course, provide the official website link using Markdown: [Course Name](https://officialsite.example).",
-    "Use Markdown with headings, short paragraphs, and a short bullet list.",
-    "End with a short call-to-action encouraging readers to book a tee time.",
-    "Return ONLY a JSON object with: title, summary, content.",
-    "summary should be 1-2 sentences.",
-  ].join("\n");
+    process.env.ARTICLE_AGENT_SYSTEM_PROMPT ||
+    "You are an engaging golf journalist who writes exciting, well-researched articles about golf courses and tournaments. Your tone is enthusiastic but professional, like a knowledgeable friend sharing insider tips.";
+  const userPrompt =
+    process.env.ARTICLE_AGENT_PROMPT ||
+    [
+      `Write a 4-minute read (${wordRange.min}-${wordRange.max} words) article about: ${topic}`,
+      "",
+      "If this is about a GOLF COURSE, include:",
+      "- The course's history and what makes it special",
+      "- Signature holes and unique challenges",
+      "- Famous tournaments or moments that happened there",
+      "- Practical info: green fees, best time to visit",
+      "- A 'Pro Tip' for playing the course",
+      "",
+      "If this is about a TOURNAMENT, include:",
+      "- History and prestige of the event",
+      "- Memorable moments and famous winners",
+      "- What makes this tournament unique",
+      "- The host course and its challenges",
+      "- Recent champions or upcoming storylines",
+      "",
+      "Writing style:",
+      "- Use Markdown with ## headers",
+      "- Keep paragraphs short and punchy",
+      "- Include specific facts, names, and dates",
+      "- Make it exciting and informative",
+      "",
+      "Return ONLY a JSON object with these exact fields:",
+      '{ "title": "Catchy article title", "summary": "1-2 sentence hook", "content": "Full markdown article" }',
+    ].join("\n");
 
   const completion = await ai.client.chat.completions.create({
     model: ai.model,
