@@ -120,29 +120,50 @@ async function generateNewsletterContent(): Promise<NewsletterContent | null> {
     return null;
   }
 
-  const systemPrompt = `You are a professional golf journalist writing a weekly newsletter for GolfSphere, a Spanish golf travel website. Your audience is golf enthusiasts interested in both world golf news and Spanish golf destinations.
+  const systemPrompt = `You are a golf journalist writing a weekly newsletter for GolfSphere, a Spanish golf travel website. Your style is clean, modern, and scannable - like a premium tech newsletter but for golf.
 
-Write engaging, informative content that golf lovers will want to read over their morning coffee. Be conversational but professional.`;
+Write content that's interesting and informative. Use short paragraphs, bullet points, and clear structure. Be conversational but knowledgeable.`;
 
-  const userPrompt = `Write a weekly golf newsletter (approximately 10-minute read, 1500-2000 words) covering:
+  const userPrompt = `Write a weekly golf newsletter with this structure:
 
-1. **This Week in Golf** - Major tournament results, notable performances, and upcoming events
-2. **World Golf News** - Important stories from the PGA Tour, DP World Tour, LPGA, and international golf
-3. **Spanish Golf Spotlight** - One interesting story or update about golf in Spain (courses, tournaments, travel news)
-4. **Tip of the Week** - A practical golf tip for weekend players
-5. **Looking Ahead** - What to watch for in the coming week
+## PART 1: MAIN TOPIC (800-1000 words)
+Pick ONE interesting topic and go deep. Choose from:
+- Golf technology or equipment trends
+- A famous golf course deep-dive
+- Golf travel tips or destination guide
+- A player profile or career retrospective
+- Golf fitness, mental game, or technique
+- The business of golf
+- Golf history or traditions
 
-Use Markdown formatting with clear headers (##). Include specific names, scores, and facts where relevant.
+Break it into 4-5 sections with clear ## headers. Use:
+- Short paragraphs (2-3 sentences max)
+- Bullet points for lists
+- Specific facts, names, and examples
+- A "The takeaway" section at the end summarizing key points
 
-Return ONLY a JSON object with these fields:
-- subject: A compelling email subject line (max 60 chars)
-- content: The full newsletter content in Markdown format
+## PART 2: TEE TIME PICKS (add at the very end)
+Add this exact section with 5 Spanish golf courses:
 
-Example format:
+## Tee Time Picks
+
+**[Course Name], [Region]**
+[One sentence description] → [Book tee times](https://www.golfspain.com)
+
+Include courses from: Costa del Sol, Costa Blanca, Mallorca, Barcelona area, or Canary Islands. Mix famous courses with hidden gems.
+
+---
+
+Return ONLY a JSON object:
 {
-  "subject": "Scheffler Dominates Again, Plus Spanish Course News",
-  "content": "## This Week in Golf\\n\\nContent here..."
-}`;
+  "subject": "Short catchy subject under 50 chars",
+  "content": "Full newsletter in Markdown"
+}
+
+Example subject lines:
+- "The science behind the perfect drive"
+- "Why Valderrama is still Europe's best"
+- "5 mistakes ruining your short game"`;
 
   try {
     const completion = await ai.client.chat.completions.create({
