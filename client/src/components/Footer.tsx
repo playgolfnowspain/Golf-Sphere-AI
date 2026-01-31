@@ -33,24 +33,6 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="font-semibold mb-4">Contact & Legal</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>
-                <a 
-                  href="mailto:playgolfnowspain@gmail.com" 
-                  className="hover:text-primary transition-colors flex items-center gap-2"
-                >
-                  <Mail className="w-3 h-3" />
-                  Contact Us
-                </a>
-              </li>
-              <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Cookie Policy</a></li>
-            </ul>
-          </div>
-
-          <div>
             <h4 className="font-semibold mb-4">Connect</h4>
             <div className="space-y-3">
               <a 
