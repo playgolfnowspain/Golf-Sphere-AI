@@ -39,7 +39,7 @@ function buildAiClient(): { client: OpenAI; provider: Provider; model: string } 
     return {
       client: perplexityClient,
       provider: "perplexity",
-      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-32k-online",
+      model: process.env.PERPLEXITY_MODEL || "sonar-pro",
     };
   }
 
@@ -48,7 +48,7 @@ function buildAiClient(): { client: OpenAI; provider: Provider; model: string } 
     return {
       client: perplexityClient,
       provider: "perplexity",
-      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-32k-online",
+      model: process.env.PERPLEXITY_MODEL || "sonar-pro",
     };
   }
 

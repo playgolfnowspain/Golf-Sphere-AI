@@ -40,7 +40,7 @@ async function searchGolfInfoWithPerplexity(query: string): Promise<string> {
   try {
     console.log(`[Perplexity] Searching: ${query}`);
     const response = await perplexityClient.chat.completions.create({
-      model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-small-128k-online",
+      model: process.env.PERPLEXITY_MODEL || "sonar",
       messages: [
         {
           role: "system",
@@ -509,7 +509,7 @@ Be friendly, helpful, and proactive. If information seems outdated, use web_sear
         ];
 
         const completion = await perplexityClient.chat.completions.create({
-          model: process.env.PERPLEXITY_MODEL || "llama-3.1-sonar-large-128k-online",
+          model: process.env.PERPLEXITY_MODEL || "sonar-pro",
           messages: chatMessages,
           stream: true,
           max_tokens: 2048,
