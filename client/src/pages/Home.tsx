@@ -1,12 +1,11 @@
 import { Link } from "wouter";
-import { useArticles, usePodcasts } from "@/hooks/use-content";
-import { Play, ArrowRight } from "lucide-react";
+import { useArticles } from "@/hooks/use-content";
+import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 export default function Home() {
   const { data: articles, isLoading: articlesLoading } = useArticles();
-  const { data: podcasts, isLoading: podcastsLoading } = usePodcasts();
 
   return (
     <div className="flex flex-col gap-20 pb-20">
@@ -44,7 +43,7 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
@@ -53,11 +52,6 @@ export default function Home() {
             <Link href="/articles">
               <button className="h-14 px-8 rounded-full bg-primary text-white font-semibold text-lg hover:bg-primary/90 transition-all shadow-xl shadow-primary/30 hover:-translate-y-1">
                 Explore Guides
-              </button>
-            </Link>
-            <Link href="/podcasts">
-              <button className="h-14 px-8 rounded-full bg-white/10 backdrop-blur-md border border-white/30 text-white font-semibold text-lg hover:bg-white/20 transition-all hover:-translate-y-1">
-                Listen to Podcasts
               </button>
             </Link>
           </motion.div>
@@ -112,47 +106,6 @@ export default function Home() {
                     </span>
                   </div>
                 </article>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Latest Podcasts */}
-      <section className="container-wide">
-        <div className="flex justify-between items-end mb-12">
-          <div>
-            <span className="text-primary font-semibold tracking-wide uppercase text-sm">Listen</span>
-            <h2 className="text-4xl mt-2">Golf Talks Podcast</h2>
-          </div>
-          <Link href="/podcasts" className="hidden md:flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors group">
-            Listen to all episodes <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
-
-        {podcastsLoading ? (
-          <div className="space-y-4">
-            {[1, 2].map(i => (
-              <div key={i} className="h-32 bg-gray-100 animate-pulse rounded-xl" />
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {podcasts?.slice(0, 4).map((podcast) => (
-              <Link key={podcast.id} href={`/podcasts/${podcast.slug}`}>
-                <div className="group bg-white border border-border p-6 rounded-2xl flex items-center gap-6 hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
-                    <Play className="w-6 h-6 ml-1" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold mb-1 group-hover:text-primary transition-colors">{podcast.title}</h3>
-                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                      <span>Episode {podcast.id}</span>
-                      <span className="w-1 h-1 rounded-full bg-border" />
-                      <span>{new Date(podcast.createdAt || "").toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </div>
               </Link>
             ))}
           </div>

@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { startArticleAgent } from "./agents/articleAgent";
 import { startNewsletterAgent } from "./agents/newsletterAgent";
+import { startPodcastAgent } from "./agents/podcastAgent";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 
@@ -65,6 +66,7 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
   startArticleAgent();
   startNewsletterAgent();
+  startPodcastAgent();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

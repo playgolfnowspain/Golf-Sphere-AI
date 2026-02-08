@@ -14,6 +14,12 @@ const DEFAULT_IMAGE_URLS = [
   "https://images.unsplash.com/photo-1593111774240-d529f12cf4bb?auto=format&fit=crop&q=80&w=1400",
   "https://images.unsplash.com/photo-1611374243147-44a702c2d44c?auto=format&fit=crop&q=80&w=1400",
   "https://images.unsplash.com/photo-1596727362302-b8d891c42ab8?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1600005082646-50b02f5ee194?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1622396636133-8bf5aa927bda?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1595841055384-c10bd1830bc4?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1558369178-6556d97855d0?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1632068365874-281960695f5f?auto=format&fit=crop&q=80&w=1400",
+  "https://images.unsplash.com/photo-1624727828489-a1e03b79bba8?auto=format&fit=crop&q=80&w=1400",
 ];
 
 // Rotating topics for daily variety
@@ -299,7 +305,8 @@ export async function runArticleAgent(options?: {
     const count = topics.length > 0 ? topics.length : Math.max(1, options?.count ?? DEFAULT_BATCH_COUNT);
     const topic = options?.topic;
     for (let index = 0; index < count; index += 1) {
-      const imageUrl = DEFAULT_IMAGE_URLS[index % DEFAULT_IMAGE_URLS.length];
+      const randomImageIndex = Math.floor(Math.random() * DEFAULT_IMAGE_URLS.length);
+      const imageUrl = DEFAULT_IMAGE_URLS[randomImageIndex];
       const selectedTopic = topics[index] || topic;
       await generateArticle({
         topic: selectedTopic,

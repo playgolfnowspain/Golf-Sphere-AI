@@ -6,6 +6,7 @@ import { z } from "zod";
 import { registerChatRoutes } from "./chat";
 import { runArticleAgent } from "./agents/articleAgent";
 import { runNewsletterAgent } from "./agents/newsletterAgent";
+import { runPodcastAgent } from "./agents/podcastAgent";
 import { sendWelcomeEmail, sendSubscriptionNotification } from "./services/email";
 
 export async function registerRoutes(
@@ -102,6 +103,28 @@ export async function registerRoutes(
       message: "Newsletter sent",
       sent: result.sent,
       failed: result.failed,
+    });
+  });
+
+  // Podcast Agent (manual trigger)
+  app.post("/api/agent/podcasts/run", async (req, res) => {
+    const token = process.env.PODCAST_AGENT_TOKEN;
+    if (token && req.headers["x-agent-token"] !== token) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const topic = typeof req.body?.topic === "string" ? req.body.topic : undefined;
+    const skipWeeklyCheck = req.body?.skipWeeklyCheck === true;
+
+    const result = await runPodcastAgent({ topic, skipWeeklyCheck });
+    if (result === null) {
+      return res.status(500).json({ message: "Podcast generation failed or already in progress" });
+    }
+
+    res.status(202).json({
+      message: "Podcast generated",
+      slug: result.podcast?.slug,
+      hasAudio: !!result.podcast?.audioUrl,
     });
   });
 

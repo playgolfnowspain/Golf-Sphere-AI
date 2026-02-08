@@ -1,10 +1,56 @@
 import { usePodcast } from "@/hooks/use-content";
 import { useRoute, Link } from "wouter";
-import { Loader2, PlayCircle, ArrowLeft, Download, Share2 } from "lucide-react";
+import { Loader2, ArrowLeft, Volume2 } from "lucide-react";
+import { useRef, useState } from "react";
+
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
 
 export default function PodcastDetail() {
   const [match, params] = useRoute("/podcasts/:slug");
   const { data: podcast, isLoading } = usePodcast(params?.slug || "");
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
 
   if (isLoading) {
     return (
@@ -36,31 +82,57 @@ export default function PodcastDetail() {
             {podcast.title}
           </h1>
           
-          <div className="bg-black text-white p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center gap-8">
-            <div className="w-32 h-32 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
-               <PlayCircle className="w-16 h-16" />
+          {podcast.audioUrl ? (
+            <div className="bg-black text-white p-8 rounded-3xl shadow-xl">
+              <audio
+                ref={audioRef}
+                src={podcast.audioUrl}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={handleEnded}
+                preload="metadata"
+              />
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <button
+                  onClick={togglePlay}
+                  className="w-20 h-20 bg-primary rounded-full flex items-center justify-center shrink-0 hover:bg-primary/90 transition-colors"
+                >
+                  {isPlaying ? (
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                      <rect x="6" y="4" width="4" height="16" />
+                      <rect x="14" y="4" width="4" height="16" />
+                    </svg>
+                  ) : (
+                    <svg className="w-8 h-8 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <polygon points="5,3 19,12 5,21" />
+                    </svg>
+                  )}
+                </button>
+                <div className="flex-1 w-full space-y-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max={duration || 100}
+                    value={currentTime}
+                    onChange={handleSeek}
+                    className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:rounded-full"
+                  />
+                  <div className="flex justify-between text-xs text-white/60 font-mono">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex-1 w-full space-y-4">
-              <div className="h-1 bg-white/20 rounded-full w-full overflow-hidden">
-                <div className="h-full w-1/3 bg-primary rounded-full" />
-              </div>
-              <div className="flex justify-between text-xs text-white/60 font-mono">
-                <span>05:12</span>
-                <span>15:00</span>
-              </div>
-              <div className="flex gap-4">
-                <button className="btn-primary py-2 px-6 rounded-full text-xs">
-                  Play Episode
-                </button>
-                <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                  <Download className="w-5 h-5" />
-                </button>
-                <button className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                  <Share2 className="w-5 h-5" />
-                </button>
+          ) : (
+            <div className="bg-secondary/50 p-8 rounded-3xl flex items-center gap-4">
+              <Volume2 className="w-8 h-8 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Audio Coming Soon</p>
+                <p className="text-sm text-muted-foreground">Read the transcript below</p>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="prose prose-lg max-w-none">
             <h3>Transcript</h3>
@@ -81,7 +153,7 @@ export default function PodcastDetail() {
               </div>
               <div>
                 <dt className="text-muted-foreground mb-1">Duration</dt>
-                <dd className="font-medium">15 min</dd>
+                <dd className="font-medium">{duration > 0 ? formatTime(duration) : "—"}</dd>
               </div>
               <div>
                 <dt className="text-muted-foreground mb-1">Host</dt>
